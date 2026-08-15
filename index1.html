@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Project Prometheus — NCC ANO Assistance System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#f6f8fb; --surface:#ffffff; --surface-2:#f1f5f9; --surface-sunk:#eef2f7;
+  --border:#e2e8f0; --border-strong:#cbd5e1;
+  --text:#0f172a; --text-soft:#475569; --text-mute:#94a3b8;
+  --blue:#2554e0; --blue-dark:#1c3fb0; --blue-soft:#eaf0ff; --blue-ring:#c7d8ff;
+  --emerald:#04815c; --emerald-dark:#036347; --emerald-soft:#e3f7ef;
+  --amber:#b5690a; --amber-soft:#fff2df;
+  --red:#c22036; --red-soft:#fdeced;
+  --radius-sm:8px; --radius:12px; --radius-lg:18px;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+  --shadow:0 2px 8px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  --shadow-lg:0 12px 32px rgba(15,23,42,.10), 0 2px 8px rgba(15,23,42,.06);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"JetBrains Mono","SFMono-Regular",Consolas,"Roboto Mono",monospace;
+  --topbar-h:60px; --sidebar-w:248px;
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--text); font-family:var(--font);
+  -webkit-font-smoothing:antialiased; font-size:14.5px; line-height:1.5;
+}
+h1,h2,h3,h4,p,ul{margin:0;}
+ul{padding:0;list-style:none;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:inherit;}
+a{color:inherit;}
+img{max-width:100%;display:block;}
+::selection{background:var(--blue-ring);}
+:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+
+/* ============ UTILITY ============ */
+.mono{font-family:var(--mono);}
+.muted{color:var(--text-soft);}
+.mute2{color:var(--text-mute);}
+.flex{display:flex;}
+.items-center{align-items:center;}
+.justify-between{justify-content:space-between;}
+.gap-1{gap:6px;} .gap-2{gap:10px;} .gap-3{gap:16px;} .gap-4{gap:24px;}
+.grid{display:grid;gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:1fr 1fr 1fr;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:960px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr 1fr;}}
+@media(max-width:640px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+.w-full{width:100%;}
+.mt-1{margin-top:8px;} .mt-2{margin-top:16px;} .mt-3{margin-top:24px;}
+.mb-1{margin-bottom:8px;} .mb-2{margin-bottom:16px;} .mb-3{margin-bottom:24px;}
+.hidden{display:none !important;}
+.scroll-y{overflow-y:auto;}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;}
+
+/* ============ TYPE ============ */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--blue);font-weight:700;}
+.h1{font-size:26px;font-weight:800;letter-spacing:-.01em;color:var(--text);}
+.h2{font-size:20px;font-weight:750;letter-spacing:-.01em;color:var(--text);}
+.h3{font-size:15.5px;font-weight:700;color:var(--text);}
+.stat-num{font-family:var(--mono);font-weight:700;font-size:28px;color:var(--text);}
+.section-title{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.section-title .h2{flex:1;}
+
+/* ============ SPLASH ============ */
+#splash{
+  position:fixed;inset:0;background:
+    radial-gradient(circle at 30% 20%, #eef4ff 0%, transparent 45%),
+    radial-gradient(circle at 80% 80%, #e6faf1 0%, transparent 45%),
+    #ffffff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999; transition:opacity .5s ease;
+}
+#splash.fade-out{opacity:0;pointer-events:none;}
+.flame-mark{width:64px;height:64px;margin-bottom:22px;animation:flamePulse 2.2s ease-in-out infinite;}
+@keyframes flamePulse{0%,100%{transform:scale(1);opacity:.92;}50%{transform:scale(1.06);opacity:1;}}
+.splash-title{font-size:34px;font-weight:800;letter-spacing:.02em;color:var(--text);opacity:0;animation:riseIn .7s ease .15s forwards;}
+.splash-sub{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-top:10px;opacity:0;animation:riseIn .7s ease .5s forwards;}
+.splash-tag{color:var(--text-mute);font-size:12.5px;margin-top:6px;opacity:0;animation:riseIn .7s ease .75s forwards;}
+@keyframes riseIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.splash-bar{width:220px;height:3px;background:var(--surface-2);border-radius:2px;margin-top:34px;overflow:hidden;border:1px solid var(--border);}
+.splash-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--emerald));animation:loadBar 2.3s ease forwards .3s;}
+@keyframes loadBar{to{width:100%;}}
+
+/* ============ LOGIN / MODE SELECT ============ */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:
+    radial-gradient(circle at 15% 10%, #eef4ff 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, #e6faf1 0%, transparent 40%), var(--bg);padding:24px;}
+.login-card{width:100%;max-width:860px;}
+.brand-row{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:34px;}
+.brand-row .flame-mark{width:34px;height:34px;margin:0;animation:none;}
+.brand-name{font-weight:800;font-size:19px;}
+.brand-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--blue);text-transform:uppercase;}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:720px){.mode-grid{grid-template-columns:1fr;}}
+.mode-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;cursor:pointer;transition:.18s;position:relative;overflow:hidden;}
+.mode-card:hover{border-color:var(--blue);box-shadow:var(--shadow-lg);transform:translateY(-2px);}
+.mode-card .corner{position:absolute;top:14px;right:14px;width:22px;height:22px;border-top:2px solid var(--border-strong);border-right:2px solid var(--border-strong);opacity:.6;}
+.mode-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;}
+.mode-icon.blue{background:var(--blue-soft);}
+.mode-icon.emerald{background:var(--emerald-soft);}
+.login-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;margin-top:20px;box-shadow:var(--shadow);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--text-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+.input,.select,.textarea{width:100%;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);transition:.15s;}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-ring);outline:none;}
+.textarea{resize:vertical;min-height:80px;}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:var(--radius-sm);padding:9px 16px;font-weight:650;font-size:13.5px;border:1px solid transparent;transition:.15s;white-space:nowrap;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:var(--blue-dark);}
+.btn-emerald{background:var(--emerald);color:#fff;}
+.btn-emerald:hover{background:var(--emerald-dark);}
+.btn-ghost{background:var(--surface);color:var(--text);border-color:var(--border-strong);}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue);}
+.btn-danger{background:var(--red-soft);color:var(--red);border-color:#f3c6cb;}
+.btn-danger:hover{background:#fbdadd;}
+.btn-sm{padding:6px 11px;font-size:12.5px;}
+.btn-lg{padding:12px 22px;font-size:14.5px;}
+.btn-block{width:100%;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.icon-btn{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-soft);flex-shrink:0;}
+.icon-btn:hover{border-color:var(--blue);color:var(--blue);}
+.icon-btn.active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
+
+/* ============ APP SHELL ============ */
+#appShell{display:none;min-height:100vh;}
+#appShell.show{display:block;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:14px;z-index:500;}
+.topbar-brand{display:flex;align-items:center;gap:9px;width:var(--sidebar-w);flex-shrink:0;}
+.topbar-brand .flame-mark{width:24px;height:24px;margin:0;animation:none;}
+.topbar-title{font-weight:800;font-size:14.5px;line-height:1.15;}
+.topbar-title small{display:block;font-family:var(--mono);font-size:9px;color:var(--blue);letter-spacing:.1em;font-weight:700;}
+.topbar-spacer{flex:1;}
+.mode-chip{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:5px 10px;border-radius:20px;text-transform:uppercase;}
+.mode-chip.pc{background:var(--blue-soft);color:var(--blue-dark);}
+.mode-chip.kiosk{background:var(--emerald-soft);color:var(--emerald-dark);}
+.lang-select{border:1px solid var(--border-strong);border-radius:8px;padding:7px 10px;background:var(--surface);font-size:12.5px;font-weight:600;color:var(--text-soft);}
+.offline-dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);flex-shrink:0;}
+.offline-dot.off{background:var(--text-mute);}
+.profile-chip{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 5px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);}
+.profile-avatar{width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;overflow-y:auto;z-index:400;}
+.nav-group-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mute);padding:14px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--text-soft);font-weight:600;font-size:13.5px;margin-bottom:2px;transition:.12s;}
+.nav-item .ic{width:18px;text-align:center;flex-shrink:0;}
+.nav-item:hover{background:var(--surface-2);color:var(--text);}
+.nav-item.active{background:var(--blue-soft);color:var(--blue-dark);}
+.nav-sub{padding-left:30px;}
+
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:26px 28px 60px;max-width:1280px;}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:.2s;box-shadow:var(--shadow-lg);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;padding:18px 16px 80px;}
+  .topbar-brand{width:auto;}
+}
+
+/* ============ CARDS / BADGES / MISC ============ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.card-tight{padding:14px 16px;}
+.tframe{position:relative;}
+.tframe::before,.tframe::after{content:'';position:absolute;width:14px;height:14px;border-color:var(--border-strong);opacity:.7;}
+.tframe::before{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid;border-top-left-radius:6px;}
+.tframe::after{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid;border-bottom-right-radius:6px;}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.02em;}
+.badge-blue{background:var(--blue-soft);color:var(--blue-dark);}
+.badge-emerald{background:var(--emerald-soft);color:var(--emerald-dark);}
+.badge-amber{background:var(--amber-soft);color:var(--amber);}
+.badge-red{background:var(--red-soft);color:var(--red);}
+.badge-gray{background:var(--surface-2);color:var(--text-soft);}
+.progress{height:8px;background:var(--surface-sunk);border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--emerald));border-radius:6px;transition:width .5s ease;}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;overflow-x:auto;}
+.tab{padding:9px 15px;font-weight:650;font-size:13.5px;color:var(--text-soft);border-bottom:2px solid transparent;white-space:nowrap;}
+.tab.active{color:var(--blue);border-color:var(--blue);}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-mute);padding:8px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);}
+td{padding:11px 12px;border-bottom:1px solid var(--border);color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface-2);}
+.subj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;transition:.15s;cursor:pointer;}
+.subj-card:hover{border-color:var(--blue);box-shadow:var(--shadow-lg);transform:translateY(-2px);}
+.subj-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;}
+
+/* ============ TOAST ============ */
+#toastRoot{position:fixed;bottom:22px;right:22px;z-index:9998;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--text);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:9px;animation:toastIn .25s ease;max-width:340px;}
+.toast.success{background:var(--emerald-dark);}
+.toast.error{background:var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ============ MODAL ============ */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px;}
+.modal{background:var(--surface);border-radius:var(--radius-lg);max-width:560px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-body{padding:20px;}
+
+/* ============ SESSION ============ */
+.phase-stepper{display:flex;gap:8px;margin-bottom:22px;}
+.phase-step{flex:1;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);}
+.phase-step .pn{font-family:var(--mono);font-size:10px;color:var(--text-mute);}
+.phase-step .pt{font-weight:700;font-size:12.5px;margin-top:2px;}
+.phase-step.active{border-color:var(--blue);background:var(--blue-soft);}
+.phase-step.active .pn{color:var(--blue);}
+.phase-step.done{border-color:var(--emerald);background:var(--emerald-soft);}
+.session-timer{font-family:var(--mono);font-size:15px;font-weight:700;padding:7px 13px;border-radius:9px;background:var(--surface-2);border:1px solid var(--border);}
+.session-timer.low{color:var(--red);background:var(--red-soft);border-color:#f3c6cb;}
+
+.audio-bar{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.seek-track{height:6px;background:var(--surface-sunk);border:1px solid var(--border);border-radius:6px;position:relative;cursor:pointer;margin:12px 0 6px;}
+.seek-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--emerald));border-radius:6px;width:0%;pointer-events:none;}
+.seek-thumb{position:absolute;top:50%;width:14px;height:14px;background:#fff;border:2px solid var(--blue);border-radius:50%;transform:translate(-50%,-50%);left:0%;box-shadow:var(--shadow-sm);pointer-events:none;}
+
+.flashcard-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:720px){.flashcard-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.flashcard-grid{grid-template-columns:1fr;}}
+.flashcard{perspective:1200px;height:130px;}
+.flashcard-inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d;cursor:pointer;}
+.flashcard.flipped .flashcard-inner{transform:rotateY(180deg);}
+.flashcard-face{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid var(--border);}
+.flashcard-front{background:var(--surface);}
+.flashcard-front .term{font-weight:750;font-size:14.5px;}
+.flashcard-back{background:var(--blue-soft);transform:rotateY(180deg);}
+.flashcard-back .def{font-size:12px;color:var(--text-soft);line-height:1.45;}
+
+.quiz-option{display:flex;align-items:center;gap:11px;padding:13px 15px;border:1.5px solid var(--border-strong);border-radius:10px;margin-bottom:9px;cursor:pointer;transition:.12s;}
+.quiz-option:hover{border-color:var(--blue);}
+.quiz-option.selected{border-color:var(--blue);background:var(--blue-soft);}
+.quiz-option.correct{border-color:var(--emerald);background:var(--emerald-soft);}
+.quiz-option.wrong{border-color:var(--red);background:var(--red-soft);}
+.opt-letter{width:26px;height:26px;border-radius:7px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:12px;flex-shrink:0;}
+.quiz-option.selected .opt-letter{background:var(--blue);color:#fff;}
+.quiz-option.correct .opt-letter{background:var(--emerald);color:#fff;}
+.quiz-option.wrong .opt-letter{background:var(--red);color:#fff;}
+
+.grade-badge{display:inline-flex;flex-direction:column;align-items:center;padding:22px 30px;border-radius:16px;border:1.5px solid;}
+.grade-badge.a{background:var(--emerald-soft);border-color:var(--emerald);}
+.grade-badge.b{background:var(--blue-soft);border-color:var(--blue);}
+.grade-badge.c{background:var(--amber-soft);border-color:var(--amber);}
+.grade-badge.d{background:var(--red-soft);border-color:var(--red);}
+.grade-letter{font-family:var(--mono);font-size:40px;font-weight:800;}
+.grade-label{font-weight:750;font-size:13px;letter-spacing:.04em;margin-top:4px;text-transform:uppercase;}
+
+.chat-panel{display:flex;flex-direction:column;height:420px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface);}
+.chat-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:78%;padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.5;}
+.chat-ai{background:var(--surface-2);align-self:flex-start;border-bottom-left-radius:4px;}
+.chat-user{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+.chat-input-row{border-top:1px solid var(--border);padding:10px;display:flex;gap:8px;}
+
+.diagram-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.terrain3d{perspective:900px;}
+.terrain3d-inner{transform:rotateX(46deg) rotateZ(0deg);transform-style:preserve-3d;transition:transform .1s;cursor:grab;}
+.terrain3d-inner:active{cursor:grabbing;}
+
+.kiosk-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:26px 18px;text-align:center;cursor:pointer;transition:.15s;}
+.kiosk-tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--blue);}
+.kiosk-tile .subj-icon{margin:0 auto 12px;}
+
+.fab{position:fixed;bottom:22px;left:calc(var(--sidebar-w) + 26px);width:52px;height:52px;border-radius:50%;background:var(--text);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:var(--shadow-lg);z-index:600;border:none;transition:.15s;}
+.fab.listening{background:var(--red);animation:pulseFab 1.2s infinite;}
+@keyframes pulseFab{0%,100%{box-shadow:0 0 0 0 rgba(194,32,54,.4);}50%{box-shadow:0 0 0 12px rgba(194,32,54,0);}}
+@media(max-width:900px){.fab{left:20px;}}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-mute);}
+.empty-state .ic{font-size:30px;margin-bottom:10px;}
+
+.scan-ring{width:64px;height:64px;border-radius:50%;border:3px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto;transition:.2s;}
+.scan-ring.scanning{border-color:var(--blue);animation:scanPulse 1s infinite;}
+.scan-ring.done{border-color:var(--emerald);background:var(--emerald-soft);}
+@keyframes scanPulse{0%,100%{box-shadow:0 0 0 0 var(--blue-ring);}50%{box-shadow:0 0 0 8px transparent;}}
+
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <svg class="flame-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M24 4C24 4 14 14 14 25C14 32.5 18.8 38 24 38C29.2 38 34 32.5 34 25C34 20 31 16.5 29 14.5C29 14.5 29.5 19 26.5 21.5C26.5 21.5 27 17 24 4Z" stroke="#2554e0" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M24 38C19.5 38 18 34 18 30.5C18 27.5 20 25 20 25C20 25 20.2 27.5 22 28.5C22 28.5 21 25.5 24 21C24 21 24 27 26.5 29C28.2 30.3 27.5 34 24 38Z" fill="#04815c"/>
+  </svg>
+  <div class="splash-title">PROJECT PROMETHEUS</div>
+  <div class="splash-sub">NCC ANO Assistance System</div>
+  <div class="splash-tag">Initializing training command interface…</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<div id="app"></div>
+<div id="toastRoot"></div>
+
+<script>
+/* ======================================================================
+   PROJECT PROMETHEUS — NCC ANO ASSISTANCE SYSTEM
+   Single-file application. No build step required.
+   ====================================================================== */
+
+/* ---------- tiny DOM / util helpers ---------- */
+const $  = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+function uid(){ return 'id' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(d){ try{ return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return d; } }
+function fmtTime(sec){ sec=Math.max(0,Math.round(sec)); const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
+function clamp(n,a,b){ return Math.max(a,Math.min(b,n)); }
+function toast(msg, type){
+  const root = $('#toastRoot');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' '+type : '');
+  el.innerHTML = (type==='success'?'✓ ':type==='error'?'⚠ ':'ℹ ') + escapeHtml(msg);
+  root.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(6px)'; el.style.transition='.25s'; setTimeout(()=>el.remove(),260); }, 3200);
+}
+
+/* ---------- persistent storage helpers (window.storage) ---------- */
+async function loadData(key, fallback, shared){
+  if(shared===undefined) shared=true;
+  try{
+    const r = await window.storage.get(key, shared);
+    if(!r || r.value===undefined) return fallback;
+    return JSON.parse(r.value);
+  }catch(e){ return fallback; }
+}
+async function saveData(key, value, shared){
+  if(shared===undefined) shared=true;
+  try{ await window.storage.set(key, JSON.stringify(value), shared); return true; }
+  catch(e){ console.warn('storage save failed', key, e); return false; }
+}
+
+/* ---------- Claude API bridge (in-artifact) ---------- */
+async function callClaude(system, userContentOrMessages, opts){
+  opts = opts || {};
+  try{
+    const messages = Array.isArray(userContentOrMessages) ? userContentOrMessages : [{role:'user', content: userContentOrMessages}];
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: system,
+        messages: messages
+      })
+    });
+    const data = await resp.json();
+    if(!data || !data.content) throw new Error('no content');
+    const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    if(!text) throw new Error('empty response');
+    if(opts.json){
+      const cleaned = text.replace(/```json/gi,'').replace(/```/g,'').trim();
+      const start = cleaned.indexOf(cleaned.trim()[0]==='[' ? '[' : '{');
+      return JSON.parse(cleaned.slice(start));
+    }
+    return text;
+  }catch(e){
+    console.warn('Claude call failed / offline:', e.message);
+    return null;
+  }
+}
+
+/* ---------- Static translation dictionary (core chrome strings) ---------- */
+const LANGS = { en:'English', hi:'हिंदी', kn:'ಕನ್ನಡ', ta:'தமிழ்', te:'తెలుగు' };
+const DICT = {
+  dashboard:{en:'Dashboard',hi:'डैशबोर्ड',kn:'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',ta:'டாஷ்போர்டு',te:'డాష్‌బోర్డ్'},
+  start:{en:'Start Session',hi:'सत्र शुरू करें',kn:'ಅಧಿವೇಶನ ಪ್ರಾರಂಭಿಸಿ',ta:'அமர்வைத் தொடங்கு',te:'సెషన్ ప్రారంభించండి'},
+  next:{en:'Next',hi:'अगला',kn:'ಮುಂದೆ',ta:'அடுத்து',te:'తదుపరి'},
+  back:{en:'Back',hi:'वापस',kn:'ಹಿಂದೆ',ta:'பின்',te:'వెనుకకు'},
+  submit:{en:'Submit',hi:'जमा करें',kn:'ಸಲ್ಲಿಸಿ',ta:'சமர்ப்பி',te:'సమర్పించండి'},
+  cadet:{en:'Cadet',hi:'कैडेट',kn:'ಕೆಡೆಟ್',ta:'கேடட்',te:'క్యాడెట్'},
+  officer:{en:'ANO',hi:'एएनओ',kn:'ಎಎನ್‌ಒ',ta:'ஏஎன்ஓ',te:'ఏఎన్ఓ'},
+  quiz:{en:'Exam Drill',hi:'परीक्षा अभ्यास',kn:'ಪರೀಕ್ಷಾ ಡ್ರಿಲ್',ta:'தேர்வு பயிற்சி',te:'పరీక్ష డ్రిల్'},
+  score:{en:'Score',hi:'स्कोर',kn:'ಸ್ಕೋರ್',ta:'மதிப்பெண்',te:'స్కోరు'},
+  theory:{en:'Theory',hi:'सिद्धांत',kn:'ಸಿದ್ಧಾಂತ',ta:'கோட்பாடு',te:'సిద్ధాంతం'},
+  discussion:{en:'Discussion',hi:'चर्चा',kn:'ಚರ್ಚೆ',ta:'விவாதம்',te:'చర్చ'},
+  doubts:{en:'Doubt Clearing',hi:'शंका समाधान',kn:'ಸಂದೇಹ ಪರಿಹಾರ',ta:'சந்தேக தீர்வு',te:'సందేహ నివృత్తి'},
+  hh:{en:'Health & Hygiene',hi:'स्वास्थ्य एवं स्वच्छता',kn:'ಆರೋಗ್ಯ ಮತ್ತು ನೈರ್ಮಲ್ಯ',ta:'சுகாதாரம் மற்றும் தூய்மை',te:'ఆరోగ్యం మరియు పరిశుభ్రత'},
+  mr:{en:'Map Reading',hi:'मानचित्र वाचन',kn:'ನಕ್ಷೆ ಓದುವಿಕೆ',ta:'வரைபடம் படித்தல்',te:'మ్యాప్ రీడింగ్'},
+  fcbc:{en:'Field Craft & Battle Craft',hi:'फील्ड क्राफ्ट एवं बैटल क्राफ्ट',kn:'ಫೀಲ್ಡ್ ಕ್ರಾಫ್ಟ್ ಮತ್ತು ಬ್ಯಾಟಲ್ ಕ್ರಾಫ್ಟ್',ta:'களப் பயிற்சி மற்றும் போர்க் கலை',te:'ఫీల్డ్ క్రాఫ్ట్ & బాటిల్ క్రాఫ్ట్'},
+  ga:{en:'General Awareness & Armed Forces',hi:'सामान्य जागरूकता एवं सशस्त्र सेना',kn:'ಸಾಮಾನ್ಯ ಜ್ಞಾನ ಮತ್ತು ಸೇನಾ ಪಡೆಗಳು',ta:'பொது அறிவு மற்றும் ஆயுதப் படைகள்',te:'సాధారణ అవగాహన & సాయుధ దళాలు'},
+  settings:{en:'Settings',hi:'सेटिंग्स',kn:'ಸಂಯೋಜನೆಗಳು',ta:'அமைப்புகள்',te:'సెట్టింగ్‌లు'},
+  logout:{en:'Exit',hi:'बाहर निकलें',kn:'ನಿರ್ಗಮಿಸಿ',ta:'வெளியேறு',te:'నిష్క్రమించు'},
+};
+function t(key){
+  const row = DICT[key];
+  if(!row) return key;
+  return row[STATE.language] || row.en;
+}
+
+/* ---------- Baseline content library (works fully offline; AI can refresh/expand it) ---------- */
+const CONTENT = {
+HH:{
+  key:'HH', name:'Health & Hygiene', short:'H&H', icon:'⛑️', accent:'emerald',
+  notes:[
+    {heading:'Personal Hygiene', body:'Daily bathing, dental care, clean nails and hair, and a well-maintained uniform are the foundation of cadet fitness. Foot care is critical before route marches — clean, dry socks and well-broken-in boots prevent blisters that can take a cadet out of training.'},
+    {heading:'Food & Water Hygiene', body:'Always eat from clean, covered utensils and inspect food for spoilage before consumption. Drinking water in camp must be treated — by boiling for at least one minute, using halogen/chlorine tablets, or passing through an approved filter — before it is considered safe.'},
+    {heading:'Camp & Environmental Hygiene', body:'Latrines in field camps should be sited at least 30 metres from and downhill of any water source, and covered after each use. Waste pits are dug away from living areas, and standing water is drained or treated to control mosquito breeding.'},
+    {heading:'Communicable Diseases', body:'Diseases such as malaria (mosquito-borne), diarrhoeal illness (contaminated food/water) and the common cold (droplet spread) are the most frequent threats during camps. Prevention rests on vaccination status, mosquito control, and strict food/water discipline.'},
+    {heading:'First Aid Fundamentals', body:'The first priority with any casualty is Danger, Response, Airway, Breathing (DRAB) before anything else. Basic skills every cadet must know: pressure-bandaging a wound, splinting a suspected fracture, and recognising the signs of heat exhaustion during drills.'},
+    {heading:'Fitness & Balanced Diet', body:'A cadet\'s diet should balance carbohydrates, proteins, fats, vitamins and minerals — not just bulk calories. Regular physical training combined with adequate hydration and sleep is what actually sustains performance on parade and in the field.'}
+  ],
+  flashcards:[
+    {term:'Potable Water', def:'Water that has been treated and tested safe for drinking (boiling, chlorination or filtration).'},
+    {term:'DRAB', def:'First-aid priority sequence: Danger, Response, Airway, Breathing.'},
+    {term:'Vector-borne Disease', def:'An illness spread by a living carrier such as a mosquito — e.g. malaria, dengue.'},
+    {term:'Balanced Diet', def:'A diet with the correct proportion of carbohydrates, proteins, fats, vitamins and minerals.'},
+    {term:'Camp Sanitation', body:'', def:'Practices (latrine siting, waste pits, drainage) that keep a field camp free of disease risk.'},
+    {term:'Immunization', def:'Building disease resistance through vaccination, a key preventive health measure.'},
+    {term:'Heat Exhaustion', def:'A heat-related illness from fluid/salt loss — recognised by fatigue, dizziness and heavy sweating.'},
+    {term:'Communicable Disease', def:'A disease that can spread from one person, animal or vector to another.'}
+  ],
+  quiz:[
+    {q:'Which method is most reliable for purifying drinking water in a field camp when boiling isn\'t possible?', options:['Adding sand to the water','Halogen / chlorine tablets','Leaving it in sunlight for 5 minutes','Stirring it rapidly'], correct:1, rationale:'Halogen/chlorine tablets are specifically designed to neutralise pathogens in field conditions.'},
+    {q:'In first aid, what should be checked first when approaching a casualty?', options:['Give them water immediately','Danger to yourself, then the casualty\'s response and airway','Move them to a hospital at once','Call their family'], correct:1, rationale:'The DRAB sequence starts with Danger — a rescuer who becomes a second casualty helps no one.'},
+    {q:'Malaria is an example of a disease spread by:', options:['Poor posture','Mosquitoes (a vector)','Cold weather','Loud noise'], correct:1, rationale:'Malaria is transmitted by the Anopheles mosquito, making it a vector-borne disease.'},
+    {q:'Camp latrines should ideally be sited:', options:['Right next to the water source for convenience','At least 30m away and downhill from any water source','Inside the sleeping tents','Anywhere, location does not matter'], correct:1, rationale:'This siting prevents contamination of drinking water through seepage or runoff.'},
+    {q:'A balanced diet for a cadet in training should include:', options:['Only high-protein foods','Only carbohydrates for energy','Carbohydrates, proteins, fats, vitamins and minerals in proportion','Skipping meals to stay light'], correct:2, rationale:'Sustained physical performance depends on all major nutrient groups, not any single one.'}
+  ]
+},
+MR:{
+  key:'MR', name:'Map Reading', short:'MR', icon:'🧭', accent:'blue',
+  notes:[
+    {heading:'Types of Maps & Marginal Information', body:'Topographical maps show natural and man-made features to scale. The margin carries essential data — sheet number, scale, year of survey and legend — which must always be checked before using a map for navigation.'},
+    {heading:'Conventional Signs & Symbols', body:'Standard symbols represent roads, railways, rivers, buildings, vegetation and boundaries so any trained reader can interpret a map without translation. Colour is also meaningful: blue for water, brown for relief/contours, black for man-made features, green for vegetation.'},
+    {heading:'Scale & Distance', body:'Scale is expressed as a Representative Fraction (RF), e.g. 1:50,000, meaning 1 unit on the map equals 50,000 of the same unit on the ground. On a 1:50,000 map, 1 cm on paper represents 500 metres of actual terrain.'},
+    {heading:'Direction & Bearing', body:'A bearing is the horizontal angle, measured clockwise from North, to a point. Cadets must distinguish True North, Magnetic North (where a compass points) and Grid North (map North) — the angular gap between True and Magnetic North is called magnetic variation/declination.'},
+    {heading:'Grid Reference System', body:'A 4-figure grid reference identifies a 1km square; a 6-figure grid reference narrows this to within 100 metres, by estimating tenths along the easting (read first, "along the corridor") then the northing ("up the stairs").'},
+    {heading:'Contours & Relief', body:'Contour lines join points of equal height. Closely spaced contours indicate a steep slope; widely spaced contours indicate gentle ground. Distinct patterns reveal hills, depressions, spurs, ridges and valleys at a glance once a cadet learns to read them.'}
+  ],
+  flashcards:[
+    {term:'Representative Fraction (RF)', def:'The map scale expressed as a ratio, e.g. 1:50,000 — 1 unit on paper equals 50,000 on the ground.'},
+    {term:'6-Figure Grid Reference', def:'A grid reference accurate to within 100m, read "along the corridor, up the stairs".'},
+    {term:'Contour Line', def:'A line on a map joining all points of equal elevation above sea level.'},
+    {term:'Magnetic Declination', def:'The angular difference between True North and Magnetic North at a given location.'},
+    {term:'Spot Height', def:'A point on a map marked with its exact elevation above sea level.'},
+    {term:'Back Bearing', def:'The reciprocal of a given bearing — the original bearing plus or minus 180°.'},
+    {term:'Re-entrant', def:'A depression or valley feature cutting into higher ground, shown by contours pointing inward/uphill.'},
+    {term:'Conventional Sign', def:'A standardised symbol used on maps to represent a real-world feature.'}
+  ],
+  quiz:[
+    {q:'A 6-figure grid reference locates a point to within approximately:', options:['1000 metres','100 metres','10 metres','1 metre'], correct:1, rationale:'Each additional digit pair in a grid reference narrows the estimate by a factor of ten; six figures resolves to about 100m.'},
+    {q:'On a map, contour lines drawn very close together indicate:', options:['Flat, level ground','A steep slope','A lake','A road junction'], correct:1, rationale:'Tightly packed contours mean elevation changes quickly over a short horizontal distance — a steep slope.'},
+    {q:'The angular difference between True North and Magnetic North is known as:', options:['Grid convergence','Magnetic variation / declination','Azimuth','Back bearing'], correct:1, rationale:'This is a standard navigation term cadets use to correct compass bearings to true bearings.'},
+    {q:'On a map with RF 1:50,000, a distance of 2 cm on the map represents on the ground:', options:['200 metres','1000 metres','2000 metres','20 metres'], correct:1, rationale:'1cm = 500m at this scale, so 2cm = 1000m (1km).'},
+    {q:'On topographic maps, which colour conventionally represents water features?', options:['Brown','Black','Blue','Green'], correct:2, rationale:'Blue is the standard convention for rivers, lakes and other water bodies on topographic maps.'}
+  ]
+},
+FCBC:{
+  key:'FCBC', name:'Field Craft & Battle Craft', short:'FC & BC', icon:'🌿', accent:'emerald',
+  notes:[
+    {heading:'Introduction to Field Craft', body:'Field craft is the disciplined use of ground, cover and concealment to move, observe and operate without being detected. It is a foundational skill built on observation, patience and understanding terrain.'},
+    {heading:'Camouflage & Concealment', body:'Effective camouflage disrupts five giveaways: Shape, Shine, Shadow, Silhouette and Movement. Breaking up outline with natural material, avoiding reflective surfaces, and staying off the skyline are basic concealment disciplines every cadet practises.'},
+    {heading:'Judging Distance', body:'Cadets are trained to estimate range using methods such as the unit-of-measure method (a known distance used as a mental ruler) and the appearance/key-range method (how much detail is visible at set distances), cross-checked between two independent estimates for accuracy.'},
+    {heading:'Field Signals', body:'Standard hand-and-arm signals allow silent communication when noise discipline is required — for example, signals for Advance, Halt, Take Cover, Rally/RV Point, and Enemy Sighted. Every cadet in a section must know and respond to these instantly.'},
+    {heading:'Use of Ground & Movement', body:'Cadets distinguish "cover from view" (protection from being seen) and "cover from fire" (protection from being hit), and select routes that use natural folds in the ground. Movement techniques include the low crawl, high crawl and short rushes between covered positions.'},
+    {heading:'Observation & Reporting', body:'Observations are reported using the SALUTE format — Size, Activity, Location, Unit, Time, Equipment — which ensures a report is complete, structured and useful to a commander without wasted words.'}
+  ],
+  flashcards:[
+    {term:'Camouflage', def:'Techniques used to blend personnel or equipment into the surrounding terrain.'},
+    {term:'Concealment', def:'Protection from being observed, as opposed to protection from weapons effects.'},
+    {term:'Cover from View', def:'Any feature that hides a cadet from enemy observation.'},
+    {term:'Cover from Fire', def:'Any feature offering physical protection from incoming fire.'},
+    {term:'SALUTE Report', def:'Observation report format: Size, Activity, Location, Unit, Time, Equipment.'},
+    {term:'RV (Rendezvous)', def:'A pre-designated point where a section assembles or links up.'},
+    {term:'Silhouette', def:'The recognisable outline of a person or object against its background — a key giveaway to avoid.'},
+    {term:'Low Crawl', def:'A stealthy ground movement technique used when cover is minimal and low profile is essential.'}
+  ],
+  quiz:[
+    {q:'Which of the following is NOT one of the core camouflage discipline principles?', options:['Shape','Shine','Speed','Shadow'], correct:2, rationale:'The core principles are Shape, Shine, Shadow, Silhouette and Movement — "Speed" is not one of them.'},
+    {q:'In a SALUTE observation report, the "L" stands for:', options:['Length','Location','Level','Logistics'], correct:1, rationale:'SALUTE = Size, Activity, Location, Unit, Time, Equipment.'},
+    {q:'"Cover from view" specifically protects a cadet from:', options:['Enemy direct fire','Being seen by the enemy','Bad weather','Loud noise'], correct:1, rationale:'Cover from view is about concealment (not being seen); cover from fire is a separate concept about physical protection.'},
+    {q:'To break up a human silhouette when observing over a ridge, a cadet should:', options:['Stand tall directly on the skyline','Observe from beside a bush or object, not over the bare top','Wave to signal position','Wear bright colours'], correct:1, rationale:'Observing from beside an object breaks the outline and avoids skylining, which is highly visible from a distance.'},
+    {q:'An RV (Rendezvous) point is used as:', options:['A cooking area','A pre-designated assembly or link-up point','A weapons storage area','A latrine site'], correct:1, rationale:'An RV is a planned location where a section can regroup if separated.'}
+  ]
+},
+GA:{
+  key:'GA', name:'General Awareness & Armed Forces', short:'GA / BC', icon:'🎖️', accent:'blue',
+  notes:[
+    {heading:'NCC — Aim, Motto & Organisation', body:'The National Cadet Corps operates under the Ministry of Defence with the motto "Unity and Discipline". It has three wings — Army, Naval and Air — organised through the Directorate General NCC, State Directorates, Group Headquarters and individual units attached to schools and colleges.'},
+    {heading:'Indian Army — Basic Organisation', body:'The Indian Army is organised into Commands, each covering a geographic area, and further into Corps, Divisions, Brigades and Units. Its structure includes combat arms, combat support arms and services, each with a distinct role.'},
+    {heading:'Indian Navy & Air Force — Basic Organisation', body:'The Indian Navy is organised into Western, Eastern and Southern Naval Commands, while the Indian Air Force operates through several geographic Commands. Both services combine operational, training and maintenance branches.'},
+    {heading:'National Integration & Social Service', body:'NCC camps such as National Integration Camps (NIC) bring cadets from different states together to build cultural understanding and unity. Cadets also regularly take part in community service, disaster relief and blood donation drives.'},
+    {heading:'Certificates & Camps', body:'Cadets progress through the \'A\', \'B\' and \'C\' certificate examinations, with the \'C\' certificate open to Senior Division/Wing cadets who meet eligibility and pass the prescribed test. Camps such as the Republic Day Camp (RDC) recognise outstanding cadets nationally.'},
+    {heading:'Staying Current — General Awareness', body:'Strong general awareness comes from a regular habit: read a national newspaper daily, follow a monthly current-affairs digest, and revise key defence and NCC-related developments weekly rather than cramming before an exam.'}
+  ],
+  flashcards:[
+    {term:'NCC Motto', def:'"Unity and Discipline" — the guiding motto of the National Cadet Corps.'},
+    {term:'DGNCC', def:'Directorate General NCC — the apex body administering the NCC nationally, under the Ministry of Defence.'},
+    {term:'Tri-Services', def:'The three wings of NCC — Army, Naval and Air Wing.'},
+    {term:'NIC', def:'National Integration Camp — brings cadets from different states together to build national unity.'},
+    {term:'\'C\' Certificate', def:'The senior-most NCC certificate, open to Senior Division/Wing cadets after a prescribed exam.'},
+    {term:'RDC', def:'Republic Day Camp — a premier annual camp recognising top cadets from across the country.'},
+    {term:'Group Headquarters', body:'', def:'The administrative layer between the State Directorate and individual NCC units.'},
+    {term:'ANO', def:'Associate NCC Officer — the officer responsible for training and administering an NCC unit.'}
+  ],
+  quiz:[
+    {q:'The motto of the National Cadet Corps is:', options:['Service Before Self','Unity and Discipline','Duty, Honour, Country','Ever Onward'], correct:1, rationale:'"Unity and Discipline" is the official NCC motto.'},
+    {q:'The NCC functions under which ministry?', options:['Ministry of Home Affairs','Ministry of Defence','Ministry of Education','Ministry of Youth Affairs & Sports'], correct:1, rationale:'NCC is administered under the Ministry of Defence, Government of India.'},
+    {q:'How many wings does the NCC have, based on the armed services?', options:['Two','Three — Army, Naval, Air','Four','Five'], correct:1, rationale:'NCC mirrors the three armed services with Army, Naval and Air Wings.'},
+    {q:'The \'C\' Certificate examination is open to:', options:['Junior Division cadets only','Senior Division / Wing cadets meeting eligibility','NCC officers only','School cadets under 14'], correct:1, rationale:'The \'C\' Certificate is the senior-most level, restricted to eligible Senior Division/Wing cadets.'},
+    {q:'National Integration Camps (NIC) primarily aim to:', options:['Focus purely on physical fitness','Build unity and cultural understanding among cadets from different states','Provide only weapons training','Run only sporting competitions'], correct:1, rationale:'NICs are specifically designed to foster national integration and cross-cultural exchange among cadets.'}
+  ]
+}
+};
+
+/* ---------- Global application state ---------- */
+const STATE = {
+  screen:'login', mode:null, profile:null, language:'en', offline:!navigator.onLine,
+  sidebarOpen:false, voiceOn:false, recognizer:null,
+  currentSubject:null, session:null,
+  cadets:[], finance:null, events:[], attendance:[], achievements:[], documents:[], pdfVault:[],
+  charts:{}, aiCache:{}
+};
+
+/* ---------- Router ---------- */
+function goto(screen, opts){
+  STATE.screen = screen;
+  if(opts) Object.assign(STATE, opts);
+  STATE.sidebarOpen = false;
+  render();
+  window.scrollTo(0,0);
+}
+function render(){
+  const root = $('#app');
+  if(STATE.screen==='login'){ root.innerHTML = screenLogin(); return; }
+  root.innerHTML = appShellHtml();
+  afterShellRender();
+}
+function afterShellRender(){
+  const body = $('#screenBody');
+  if(!body) return;
+  const fn = SCREEN_RENDERERS[STATE.screen];
+  body.innerHTML = fn ? fn() : emptyState('Screen not found');
+  if(SCREEN_AFTER && SCREEN_AFTER[STATE.screen]) SCREEN_AFTER[STATE.screen]();
+}
+const SCREEN_RENDERERS = {};
+const SCREEN_AFTER = {};
+
+function emptyState(msg, icon){
+  return `<div class="empty-state"><div class="ic">${icon||'📭'}</div><div>${escapeHtml(msg)}</div></div>`;
+}
+
+/* ---------- AI content helpers (all degrade gracefully to baseline content) ---------- */
+async function aiGenerateNotes(subject){
+  if(STATE.offline) return null;
+  const sys = 'You are an expert NCC (National Cadet Corps, India) instructor writing lecture notes for cadet training sessions. Write clear, factual, structured training content only. Never include weapon assembly, firing, or operational combat instructions.';
+  const usr = `Write concise lecture notes (about 380-450 words total) for the NCC subject "${subject.name}". Cover these sections: ${subject.notes.map(n=>n.heading).join(', ')}. Return ONLY a JSON array like [{"heading":"...","body":"..."}] with one object per section, no markdown fences, no commentary.`;
+  const result = await callClaude(sys, usr, {json:true});
+  if(Array.isArray(result) && result.length>0 && result[0].heading) return result;
+  return null;
+}
+async function aiGenerateQuiz(subject, notesText){
+  if(STATE.offline) return null;
+  const sys = 'You are an NCC training assessment generator. Output ONLY valid JSON, nothing else. Never reference weapon operation, firing, or combat tactics beyond standard field-craft awareness.';
+  const usr = `Based on this "${subject.name}" NCC training material:\n\n${notesText.slice(0,2800)}\n\nGenerate exactly 5 fresh multiple-choice questions as a JSON array. Each item: {"q":"...","options":["a","b","c","d"],"correct":0,"rationale":"one short sentence"}. Vary from obvious textbook phrasing.`;
+  const result = await callClaude(sys, usr, {json:true});
+  if(Array.isArray(result) && result.length>=4) return result.slice(0,5);
+  return null;
+}
+async function aiAskDoubt(subject, contextNotes, history, question){
+  if(STATE.offline) return null;
+  const sys = `You are a patient, encouraging NCC training assistant helping a cadet or ANO with doubts about "${subject.name}". Keep answers to 2-4 concise sentences, grounded in standard NCC training knowledge. Context notes for this session:\n${contextNotes.slice(0,2200)}\n\nNever provide weapon assembly, firing, or operational combat instructions — redirect such questions to the unit's ANO/range safety staff.`;
+  const messages = history.concat([{role:'user', content:question}]).map(m=>({role:m.role, content:m.content}));
+  const result = await callClaude(sys, messages);
+  return result;
+}
+async function aiTranslate(text, langCode){
+  if(STATE.offline || langCode==='en') return null;
+  const cacheKey = langCode+'::'+text.slice(0,60);
+  if(STATE.aiCache[cacheKey]) return STATE.aiCache[cacheKey];
+  const sys = `You are a professional translator for NCC (National Cadet Corps) training material, translating into ${LANGS[langCode]}. Preserve meaning and structure. Output ONLY the translated text, no notes or preamble.`;
+  const result = await callClaude(sys, text);
+  if(result) STATE.aiCache[cacheKey] = result;
+  return result;
+}
+async function aiSummarizeText(text){
+  if(STATE.offline) return null;
+  const sys = 'You produce concise executive summaries of documents for a busy NCC ANO. Output ONLY a JSON array of 5-7 short bullet-point strings, no markdown fences.';
+  const usr = `Summarize this document:\n\n${text.slice(0,6500)}`;
+  const result = await callClaude(sys, usr, {json:true});
+  if(Array.isArray(result)) return result;
+  return null;
+}
+async function aiQuizFromText(text){
+  if(STATE.offline) return null;
+  const sys = 'You generate assessment questions from arbitrary reference material for NCC training. Output ONLY valid JSON.';
+  const usr = `From this document text:\n\n${text.slice(0,6500)}\n\nGenerate exactly 5 multiple-choice questions as JSON array: [{"q":"...","options":["a","b","c","d"],"correct":0,"rationale":"..."}].`;
+  const result = await callClaude(sys, usr, {json:true});
+  if(Array.isArray(result) && result.length>=3) return result.slice(0,5);
+  return null;
+}
+async function aiChatOnDoc(docText, history, question){
+  if(STATE.offline) return null;
+  const sys = `Answer questions grounded strictly in the following uploaded document. Be concise (2-4 sentences). If the answer is not in the document, say so plainly.\n\nDOCUMENT:\n${docText.slice(0,6500)}`;
+  const messages = history.concat([{role:'user', content:question}]).map(m=>({role:m.role, content:m.content}));
+  return await callClaude(sys, messages);
+}
+
+/* ======================= LOGIN / MODE SELECT ======================= */
+let PENDING_MODE = null;
+function screenLogin(){
+  return `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="brand-row">
+        <svg class="flame-mark" viewBox="0 0 48 48" fill="none"><path d="M24 4C24 4 14 14 14 25C14 32.5 18.8 38 24 38C29.2 38 34 32.5 34 25C34 20 31 16.5 29 14.5C29 14.5 29.5 19 26.5 21.5C26.5 21.5 27 17 24 4Z" stroke="#2554e0" stroke-width="2" stroke-linejoin="round"/><path d="M24 38C19.5 38 18 34 18 30.5C18 27.5 20 25 20 25C20 25 20.2 27.5 22 28.5C22 28.5 21 25.5 24 21C24 21 24 27 26.5 29C28.2 30.3 27.5 34 24 38Z" fill="#04815c"/></svg>
+        <div>
+          <div class="brand-name">PROJECT PROMETHEUS</div>
+          <div class="brand-sub">NCC ANO Assistance System</div>
+        </div>
+      </div>
+
+      ${!PENDING_MODE ? `
+      <div class="mode-grid">
+        <div class="mode-card tframe" onclick="PENDING_MODE='pc'; render();">
+          <div class="corner"></div>
+          <div class="mode-icon blue">🖥️</div>
+          <div class="h3">PC Mode — ANO Command</div>
+          <p class="muted mt-1" style="font-size:13px;">Full administration: lesson planning, cadet roster, finance, records, events &amp; biometric roll call.</p>
+          <div class="pill-row mt-2"><span class="badge badge-blue">Full Access</span><span class="badge badge-gray">Officer Login</span></div>
+        </div>
+        <div class="mode-card tframe" onclick="PENDING_MODE='kiosk'; render();">
+          <div class="corner"></div>
+          <div class="mode-icon emerald">📱</div>
+          <div class="h3">Kiosk Mode — Cadet</div>
+          <p class="muted mt-1" style="font-size:13px;">Locked-down shared-device interface: study modules, quizzes, calendar &amp; voice doubts.</p>
+          <div class="pill-row mt-2"><span class="badge badge-emerald">Restricted</span><span class="badge badge-gray">Shared Device</span></div>
+        </div>
+      </div>
+      ` : `
+      <div class="login-form tframe">
+        <div class="corner"></div>
+        <div class="flex items-center gap-2 mb-2">
+          <button class="icon-btn" onclick="PENDING_MODE=null; render();">←</button>
+          <div class="h3">${PENDING_MODE==='pc' ? 'ANO Officer Login' : 'Cadet Kiosk Check-in'}</div>
+        </div>
+        <div class="field">
+          <label>Full Name</label>
+          <input class="input" id="loginName" placeholder="e.g. Capt. R. Sharma" />
+        </div>
+        <div class="field">
+          <label>Unit / Institution</label>
+          <input class="input" id="loginUnit" placeholder="e.g. 3 KAR BN NCC" />
+        </div>
+        ${PENDING_MODE==='pc' ? `
+        <div class="field">
+          <label>Access PIN <span class="mute2" style="text-transform:none;font-weight:500;">(demo — any 4 digits)</span></label>
+          <input class="input" id="loginPin" type="password" maxlength="4" placeholder="••••" />
+        </div>` : ''}
+        <button class="btn btn-primary btn-block btn-lg mt-2" onclick="submitLogin()">Enter ${PENDING_MODE==='pc'?'Command Dashboard':'Cadet Dashboard'} →</button>
+        <p class="mute2 mt-2" style="font-size:11.5px;text-align:center;">Demo authentication for exhibition purposes — not a production identity system.</p>
+      </div>
+      `}
+    </div>
+  </div>`;
+}
+function submitLogin(){
+  const name = ($('#loginName')?.value || '').trim() || (PENDING_MODE==='pc' ? 'ANO Officer' : 'Cadet');
+  const unit = ($('#loginUnit')?.value || '').trim() || 'NCC Unit';
+  STATE.profile = { name, unit, role: PENDING_MODE==='pc' ? 'ANO' : 'Cadet' };
+  STATE.mode = PENDING_MODE;
+  goto(PENDING_MODE==='pc' ? 'pc-dashboard' : 'kiosk-dashboard');
+  toast('Welcome, '+name, 'success');
+}
+function logoutApp(){
+  STATE.profile = null; STATE.mode = null; PENDING_MODE = null;
+  goto('login');
+}
+
+/* ======================= APP SHELL (topbar + sidebar) ======================= */
+function appShellHtml(){
+  return `
+  <div class="topbar">
+    <div class="topbar-brand">
+      <svg class="flame-mark" viewBox="0 0 48 48" fill="none"><path d="M24 4C24 4 14 14 14 25C14 32.5 18.8 38 24 38C29.2 38 34 32.5 34 25C34 20 31 16.5 29 14.5C29 14.5 29.5 19 26.5 21.5C26.5 21.5 27 17 24 4Z" stroke="#2554e0" stroke-width="2" stroke-linejoin="round"/><path d="M24 38C19.5 38 18 34 18 30.5C18 27.5 20 25 20 25C20 25 20.2 27.5 22 28.5C22 28.5 21 25.5 24 21C24 21 24 27 26.5 29C28.2 30.3 27.5 34 24 38Z" fill="#04815c"/></svg>
+      <div class="topbar-title">PROMETHEUS<small>NCC ANO SYSTEM</small></div>
+    </div>
+    <button class="icon-btn" style="display:none" id="hamburgerBtn" onclick="STATE.sidebarOpen=!STATE.sidebarOpen; $('.sidebar').classList.toggle('open');">☰</button>
+    <span class="mode-chip ${STATE.mode}">${STATE.mode==='pc'?'PC · Command':'Kiosk · Cadet'}</span>
+    <div class="topbar-spacer"></div>
+    <div class="flex items-center gap-2" title="${STATE.offline?'Offline mode — using cached content':'Online'}">
+      <span class="offline-dot ${STATE.offline?'off':''}"></span>
+      <span class="mute2" style="font-size:11.5px;">${STATE.offline?'OFFLINE':'ONLINE'}</span>
+      <button class="icon-btn ${STATE.offline?'active':''}" title="Toggle offline mode" onclick="toggleOffline()">📡</button>
+    </div>
+    <select class="lang-select" onchange="setLanguage(this.value)">
+      ${Object.keys(LANGS).map(l=>`<option value="${l}" ${STATE.language===l?'selected':''}>${LANGS[l]}</option>`).join('')}
+    </select>
+    <div class="profile-chip">
+      <div class="profile-avatar">${(STATE.profile?.name||'?').slice(0,1).toUpperCase()}</div>
+      <div style="font-size:12px;">
+        <div style="font-weight:700;line-height:1.1;">${escapeHtml(STATE.profile?.name||'')}</div>
+        <div class="mute2" style="line-height:1.1;">${escapeHtml(STATE.profile?.unit||'')}</div>
+      </div>
+      <button class="icon-btn" style="width:26px;height:26px;border:none;background:transparent;" title="${t('logout')}" onclick="logoutApp()">⏻</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    ${sidebarNav()}
+  </div>
+
+  <div class="main" id="screenBody"></div>
+
+  <button class="fab ${STATE.voiceOn?'listening':''}" title="Voice control" onclick="toggleVoice()">${STATE.voiceOn?'●':'🎙️'}</button>
+  `;
+}
+function navItem(screen, icon, label, extraOnclick){
+  const active = STATE.screen===screen;
+  return `<div class="nav-item ${active?'active':''}" onclick="${extraOnclick||('goto(\''+screen+'\')')}"><span class="ic">${icon}</span><span>${label}</span></div>`;
+}
+function sidebarNav(){
+  if(STATE.mode==='pc'){
+    return `
+      <div class="nav-group-label">Command</div>
+      ${navItem('pc-dashboard','🏠','Dashboard')}
+      <div class="nav-group-label">Training Modules</div>
+      ${navItem('subject-home','⛑️','Health & Hygiene', "goto('subject-home',{currentSubject:'HH'})")}
+      ${navItem('subject-home','🧭','Map Reading', "goto('subject-home',{currentSubject:'MR'})")}
+      ${navItem('subject-home','🌿','Field Craft & BC', "goto('subject-home',{currentSubject:'FCBC'})")}
+      ${navItem('subject-home','🎖️','General Awareness', "goto('subject-home',{currentSubject:'GA'})")}
+      ${navItem('pdf-vault','📄','Custom PDF Vault')}
+      <div class="nav-group-label">Administration</div>
+      ${navItem('pc-finance','💰','Finance & Syllabus')}
+      ${navItem('pc-roster','👥','Cadet Roster & Analytics')}
+      ${navItem('pc-records','🗂️','Records & Archives')}
+      ${navItem('pc-events','📅','Events & Roll Call')}
+    `;
+  }
+  return `
+      <div class="nav-group-label">Cadet Menu</div>
+      ${navItem('kiosk-dashboard','🏠','Dashboard')}
+      ${navItem('subject-home','⛑️','Health & Hygiene', "goto('subject-home',{currentSubject:'HH'})")}
+      ${navItem('subject-home','🧭','Map Reading', "goto('subject-home',{currentSubject:'MR'})")}
+      ${navItem('subject-home','🌿','Field Craft & BC', "goto('subject-home',{currentSubject:'FCBC'})")}
+      ${navItem('subject-home','🎖️','General Awareness', "goto('subject-home',{currentSubject:'GA'})")}
+      ${navItem('pdf-vault','📄','My PDF Vault')}
+      ${navItem('pc-events','📅','Calendar (view only)')}
+  `;
+}
+
+/* ---------- shared small helpers used across screens ---------- */
+function subjectList(){ return ['HH','MR','FCBC','GA']; }
+function syllabusPctFor(key){
+  const mp = STATE.moduleProgress && STATE.moduleProgress[key];
+  if(mp && typeof mp.syllabusPct==='number') return mp.syllabusPct;
+  return {HH:72,MR:58,FCBC:84,GA:45}[key] || 50;
+}
+function avgSyllabusPct(){
+  const vals = subjectList().map(syllabusPctFor);
+  return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+}
+function budgetRemaining(){
+  if(!STATE.finance) return 0;
+  const spent = STATE.finance.expenditures.reduce((a,e)=>a+Number(e.amount||0),0);
+  return STATE.finance.budget - spent;
+}
+function upcomingEvents(n){
+  const today = new Date().toISOString().slice(0,10);
+  return (STATE.events||[]).filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,n||3);
+}
+function statusBadge(status){
+  const map = {active:['badge-emerald','Active'], new:['badge-blue','New Joinee'], dropout:['badge-red','Dropout'], camp:['badge-amber','In Camp']};
+  const m = map[status]||['badge-gray',status];
+  return `<span class="badge ${m[0]}">${m[1]}</span>`;
+}
+
+/* ======================= PC DASHBOARD ======================= */
+SCREEN_RENDERERS['pc-dashboard'] = function(){
+  const ev = upcomingEvents(3);
+  return `
+  <div class="section-title"><div><div class="eyebrow">Command Overview</div><div class="h1">Welcome back, ${escapeHtml((STATE.profile?.name||'').split(' ')[0]||'Officer')}</div></div></div>
+  <div class="grid grid-4 mb-3">
+    <div class="card tframe"><div class="muted" style="font-size:12px;">Total Cadets</div><div class="stat-num mt-1">${STATE.cadets.length}</div><div class="mute2" style="font-size:11.5px;">${STATE.cadets.filter(c=>c.status==='active').length} active</div></div>
+    <div class="card tframe"><div class="muted" style="font-size:12px;">Avg. Syllabus Completion</div><div class="stat-num mt-1">${avgSyllabusPct()}%</div><div class="progress mt-1"><div class="progress-fill" style="width:${avgSyllabusPct()}%"></div></div></div>
+    <div class="card tframe"><div class="muted" style="font-size:12px;">Upcoming Events</div><div class="stat-num mt-1">${(STATE.events||[]).filter(e=>e.date>=new Date().toISOString().slice(0,10)).length}</div><div class="mute2" style="font-size:11.5px;">${ev[0]?escapeHtml(ev[0].title):'None scheduled'}</div></div>
+    <div class="card tframe"><div class="muted" style="font-size:12px;">Budget Remaining</div><div class="stat-num mt-1">₹${budgetRemaining().toLocaleString('en-IN')}</div><div class="mute2" style="font-size:11.5px;">of ₹${(STATE.finance?.budget||0).toLocaleString('en-IN')} allocated</div></div>
+  </div>
+
+  <div class="section-title"><div class="h2">Training Modules</div></div>
+  <div class="grid grid-4 mb-3">
+    ${subjectList().map(k=>{ const s=CONTENT[k]; return `
+      <div class="subj-card" onclick="goto('subject-home',{currentSubject:'${k}'})">
+        <div class="subj-icon" style="background:var(--${s.accent}-soft);">${s.icon}</div>
+        <div class="h3">${s.short}</div>
+        <div class="mute2 mt-1" style="font-size:12px;">${s.name}</div>
+        <div class="progress mt-2"><div class="progress-fill" style="width:${syllabusPctFor(k)}%"></div></div>
+        <div class="mute2 mt-1" style="font-size:11px;">${syllabusPctFor(k)}% syllabus complete</div>
+      </div>`; }).join('')}
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="section-title"><div class="h3">Upcoming Events</div><button class="btn btn-ghost btn-sm" onclick="goto('pc-events')">View All →</button></div>
+      ${ev.length? ev.map(e=>`
+        <div class="flex items-center justify-between" style="padding:9px 0;border-bottom:1px solid var(--border);">
+          <div><div style="font-weight:650;font-size:13.5px;">${escapeHtml(e.title)}</div><div class="mute2" style="font-size:11.5px;">${fmtDate(e.date)} · ${escapeHtml(e.location||'')}</div></div>
+          <span class="badge badge-blue">${escapeHtml(e.type||'Event')}</span>
+        </div>`).join('') : emptyState('No upcoming events')}
+    </div>
+    <div class="card">
+      <div class="section-title"><div class="h3">Quick Actions</div></div>
+      <div class="grid grid-2">
+        <button class="btn btn-ghost" onclick="goto('pdf-vault')">📄 PDF Vault</button>
+        <button class="btn btn-ghost" onclick="goto('pc-roster')">👥 Cadet Roster</button>
+        <button class="btn btn-ghost" onclick="goto('pc-finance')">💰 Log Expense</button>
+        <button class="btn btn-ghost" onclick="goto('pc-events',{eventsTab:'biometric'})">🖐️ Roll Call</button>
+      </div>
+    </div>
+  </div>`;
+};
+
+/* ======================= KIOSK DASHBOARD ======================= */
+SCREEN_RENDERERS['kiosk-dashboard'] = function(){
+  const ev = upcomingEvents(3);
+  return `
+  <div class="section-title"><div><div class="eyebrow">Cadet Station</div><div class="h1">Ready to train, ${escapeHtml((STATE.profile?.name||'Cadet').split(' ')[0])}?</div></div></div>
+  <div class="grid grid-4 mb-3">
+    ${subjectList().map(k=>{ const s=CONTENT[k]; return `
+      <div class="kiosk-tile" onclick="goto('subject-home',{currentSubject:'${k}'})">
+        <div class="subj-icon" style="background:var(--${s.accent}-soft);">${s.icon}</div>
+        <div class="h3">${s.short}</div>
+        <div class="mute2 mt-1" style="font-size:11.5px;">40-min session</div>
+      </div>`; }).join('')}
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="section-title"><div class="h3">📄 Custom PDF Vault</div></div>
+      <p class="muted" style="font-size:13px;">Upload your own notes or handouts to get instant summaries, ask doubts, or generate a practice quiz.</p>
+      <button class="btn btn-primary mt-2" onclick="goto('pdf-vault')">Open PDF Vault →</button>
+    </div>
+    <div class="card">
+      <div class="section-title"><div class="h3">📅 Upcoming</div></div>
+      ${ev.length? ev.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);"><div style="font-weight:650;font-size:13.5px;">${escapeHtml(e.title)}</div><div class="mute2" style="font-size:11.5px;">${fmtDate(e.date)}</div></div>`).join('') : emptyState('No upcoming events')}
+    </div>
+  </div>
+  <div class="card mt-3 tframe">
+    <div class="flex items-center gap-2"><span style="font-size:20px;">🎙️</span><div><div class="h3">Have a doubt?</div><div class="muted" style="font-size:12.5px;">Tap the mic button (bottom-left) anytime to ask a question by voice, or open any subject and use Phase 4 — Doubt Clearing.</div></div></div>
+  </div>`;
+};
+
+/* ======================= SUBJECT HOME ======================= */
+SCREEN_RENDERERS['subject-home'] = function(){
+  const key = STATE.currentSubject || 'HH';
+  const s = CONTENT[key];
+  const mp = (STATE.moduleProgress && STATE.moduleProgress[key]) || {attempts:[]};
+  const attempts = mp.attempts || [];
+  const best = attempts.length? Math.max(...attempts.map(a=>a.score)) : null;
+  return `
+  <div class="section-title">
+    <div class="subj-icon" style="background:var(--${s.accent}-soft);">${s.icon}</div>
+    <div style="flex:1;"><div class="eyebrow">Training Module</div><div class="h1">${s.name}</div></div>
+    <button class="btn btn-ghost" onclick="exportLessonPlanPDF('${key}')">⬇ Lesson Plan PDF</button>
+  </div>
+
+  <div class="grid grid-2 mb-3">
+    <div class="card tframe">
+      <div class="h3 mb-2">40-Minute Structured Session</div>
+      <div class="phase-stepper" style="margin-bottom:14px;">
+        <div class="phase-step"><div class="pn">01 · 20 MIN</div><div class="pt">Theory + Audio + Flashcards</div></div>
+        <div class="phase-step"><div class="pn">02 · 10 MIN</div><div class="pt">Exam Drill</div></div>
+        <div class="phase-step"><div class="pn">03 · 5 MIN</div><div class="pt">Discussion</div></div>
+        <div class="phase-step"><div class="pn">04 · 5 MIN</div><div class="pt">Doubt Clearing</div></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startSession('${key}')">▶ ${t('start')}</button>
+    </div>
+    <div class="card">
+      <div class="h3 mb-2">Your Progress</div>
+      <div class="flex items-center justify-between mb-1"><span class="muted" style="font-size:12.5px;">Syllabus completion</span><span class="mono" style="font-size:12.5px;font-weight:700;">${syllabusPctFor(key)}%</span></div>
+      <div class="progress mb-2"><div class="progress-fill" style="width:${syllabusPctFor(key)}%"></div></div>
+      <div class="flex items-center justify-between mb-1"><span class="muted" style="font-size:12.5px;">Sessions completed</span><span class="mono" style="font-size:12.5px;font-weight:700;">${attempts.length}</span></div>
+      <div class="flex items-center justify-between"><span class="muted" style="font-size:12.5px;">Best score</span><span class="mono" style="font-size:12.5px;font-weight:700;">${best!==null? best+'/5' : '—'}</span></div>
+      ${attempts.length? `<div class="mt-2" style="max-height:110px;overflow-y:auto;">${attempts.slice().reverse().map(a=>`<div class="flex items-center justify-between" style="font-size:12px;padding:5px 0;border-top:1px solid var(--border);"><span class="mute2">${fmtDate(a.date)}</span><span class="mono">${a.score}/5</span></div>`).join('')}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="h3 mb-2">Key Terms Preview</div>
+      <div class="pill-row">${s.flashcards.slice(0,6).map(f=>`<span class="badge badge-gray">${escapeHtml(f.term)}</span>`).join('')}</div>
+    </div>
+    <div class="card">
+      <div class="h3 mb-2">Session Covers</div>
+      <ul>${s.notes.map(n=>`<li class="muted" style="font-size:13px;padding:4px 0;">▸ ${escapeHtml(n.heading)}</li>`).join('')}</ul>
+    </div>
+  </div>`;
+};
+
+/* ======================= SESSION ENGINE — SETUP ======================= */
+async function startSession(key){
+  const s = CONTENT[key];
+  STATE.session = {
+    subject:key, phase:1, phase1Tab:'notes',
+    notes: s.notes.slice(), notesSource:'baseline', sentences:[],
+    audioPlaying:false, audioIdx:0,
+    flashFlipped:{},
+    quiz: s.quiz.map(q=>({...q})), quizSource:'baseline', currentQ:0,
+    answers: s.quiz.map(()=>null), submitted:false, score:0, _quizFetched:false,
+    chatHistory:[], timeLeft:1200, timerInterval:null, startedAt:Date.now()
+  };
+  buildSentences();
+  goto('session');
+  startPhaseTimer();
+}
+function buildSentences(){
+  const text = STATE.session.notes.map(n=>n.heading+'. '+n.body).join(' ');
+  const raw = text.match(/[^.!?]+[.!?]+/g) || [text];
+  STATE.session.sentences = raw.map(x=>x.trim()).filter(Boolean);
+  STATE.session.audioIdx = 0;
+}
+function startPhaseTimer(){
+  stopPhaseTimer();
+  const durations = {1:1200,2:600,3:300,4:300};
+  STATE.session.timeLeft = durations[STATE.session.phase];
+  STATE.session.timerInterval = setInterval(()=>{
+    if(!STATE.session) return stopPhaseTimer();
+    STATE.session.timeLeft--;
+    const label = $('#sessionTimerLabel'); const wrap = $('#sessionTimerWrap');
+    if(label){ label.textContent = fmtTime(STATE.session.timeLeft); }
+    if(wrap){ wrap.classList.toggle('low', STATE.session.timeLeft<=30); }
+    if(STATE.session.timeLeft<=0){ stopPhaseTimer(); toast('Time guide for this phase is up — continue when ready','info'); }
+  },1000);
+}
+function stopPhaseTimer(){ if(STATE.session && STATE.session.timerInterval){ clearInterval(STATE.session.timerInterval); STATE.session.timerInterval=null; } }
+function sessionGoPhase(n){
+  audioStop();
+  STATE.session.phase = n;
+  if(n===2 && !STATE.session._quizFetched){ STATE.session._quizFetched = true; tryFetchFreshQuiz(); }
+  afterShellRender();
+  startPhaseTimer();
+}
+async function tryFetchFreshQuiz(){
+  const notesText = STATE.session.notes.map(x=>x.heading+': '+x.body).join(' ');
+  const fresh = await aiGenerateQuiz(CONTENT[STATE.session.subject], notesText);
+  if(fresh && STATE.session && STATE.session.phase===2 && !STATE.session.submitted){
+    STATE.session.quiz = fresh; STATE.session.quizSource = 'ai';
+    STATE.session.answers = fresh.map(()=>null);
+    if(STATE.screen==='session') afterShellRender();
+  }
+}
+
+/* ---------- Audio bar (Web Speech API, sentence-level seek) ---------- */
+let SEEK_DRAGGING = false;
+window.addEventListener('mousemove', e=>{ if(SEEK_DRAGGING) handleSeekClick(e); });
+window.addEventListener('mouseup', ()=> SEEK_DRAGGING=false);
+window.addEventListener('touchmove', e=>{ if(SEEK_DRAGGING) handleSeekTouch(e); }, {passive:true});
+window.addEventListener('touchend', ()=> SEEK_DRAGGING=false);
+
+function sess_toggleAudio(){
+  if(!('speechSynthesis' in window)){ toast('Speech synthesis is not supported in this browser','error'); return; }
+  const sess = STATE.session;
+  if(sess.audioPlaying){ audioPause(); }
+  else if(speechSynthesis.paused && speechSynthesis.speaking){ audioResume(); }
+  else { audioPlay(); }
+}
+function audioPlay(){
+  const sess = STATE.session; if(!sess || !sess.sentences.length) return;
+  speechSynthesis.cancel();
+  sess.audioPlaying = true;
+  speakFrom(sess.audioIdx);
+}
+function speakFrom(i){
+  const sess = STATE.session; if(!sess) return;
+  if(i>=sess.sentences.length){ sess.audioPlaying=false; sess.audioIdx=0; updateAudioUI(); return; }
+  sess.audioIdx = i;
+  const u = new SpeechSynthesisUtterance(sess.sentences[i]);
+  u.lang = ({en:'en-IN',hi:'hi-IN',kn:'kn-IN',ta:'ta-IN',te:'te-IN'})[STATE.language] || 'en-IN';
+  u.rate = 0.98;
+  u.onend = () => { if(STATE.session && STATE.session.audioPlaying) speakFrom(i+1); };
+  speechSynthesis.speak(u);
+  updateAudioUI();
+}
+function audioPause(){ if(speechSynthesis.speaking){ speechSynthesis.pause(); STATE.session.audioPlaying=false; updateAudioUI(); } }
+function audioResume(){ if(speechSynthesis.paused){ speechSynthesis.resume(); STATE.session.audioPlaying=true; updateAudioUI(); } }
+function audioStop(){ if('speechSynthesis' in window) speechSynthesis.cancel(); if(STATE.session){ STATE.session.audioPlaying=false; STATE.session.audioIdx=0; } updateAudioUI(); }
+function audioReplay(){ if(!STATE.session) return; speechSynthesis.cancel(); STATE.session.audioIdx=0; STATE.session.audioPlaying=true; speakFrom(0); }
+function handleSeekClick(e){ const track=$('#seekTrack'); if(!track) return; const rect=track.getBoundingClientRect(); audioSeek(clamp((e.clientX-rect.left)/rect.width,0,1)); }
+function handleSeekTouch(e){ const track=$('#seekTrack'); if(!track || !e.touches[0]) return; const rect=track.getBoundingClientRect(); audioSeek(clamp((e.touches[0].clientX-rect.left)/rect.width,0,1)); }
+function audioSeek(frac){
+  const sess = STATE.session; if(!sess || !sess.sentences.length) return;
+  const idx = clamp(Math.round(frac*(sess.sentences.length-1)),0,sess.sentences.length-1);
+  const wasPlaying = sess.audioPlaying;
+  speechSynthesis.cancel();
+  sess.audioIdx = idx;
+  if(wasPlaying) speakFrom(idx); else updateAudioUI();
+}
+function updateAudioUI(){
+  const sess = STATE.session; if(!sess) return;
+  const fill=$('#seekFill'), thumb=$('#seekThumb'), label=$('#audioTimeLabel'), btn=$('#audioPlayBtn');
+  if(!fill) return;
+  const pct = sess.sentences.length>1 ? (sess.audioIdx/(sess.sentences.length-1))*100 : 0;
+  fill.style.width = pct+'%'; thumb.style.left = pct+'%';
+  if(label) label.textContent = (sess.audioIdx+1)+' / '+sess.sentences.length;
+  if(btn) btn.textContent = sess.audioPlaying ? '⏸' : '▶';
+}
+
+/* ---------- Flashcards ---------- */
+function flipCard(idx){
+  STATE.session.flashFlipped[idx] = !STATE.session.flashFlipped[idx];
+  const el = document.querySelector('.flashcard[data-idx="'+idx+'"]');
+  if(el) el.classList.toggle('flipped');
+}
+function renderFlashcardsTab(){
+  const s = CONTENT[STATE.session.subject];
+  return `<div class="flashcard-grid">${s.flashcards.map((f,i)=>`
+    <div class="flashcard ${STATE.session.flashFlipped[i]?'flipped':''}" data-idx="${i}" onclick="flipCard(${i})">
+      <div class="flashcard-inner">
+        <div class="flashcard-face flashcard-front"><div class="term">${escapeHtml(f.term)}</div></div>
+        <div class="flashcard-face flashcard-back"><div class="def">${escapeHtml(f.def)}</div></div>
+      </div>
+    </div>`).join('')}</div>
+    <p class="mute2 mt-2" style="font-size:11.5px;">Tap a card to flip. ${s.flashcards.length} core terms for ${escapeHtml(s.name)}.</p>`;
+}
+
+/* ---------- Diagrams (hand-drawn inline SVG, theme-matched) ---------- */
+function diagramHH(){
+  return `<div class="diagram-wrap"><div class="h3 mb-2">Hygiene Priority Pyramid</div>
+  <svg viewBox="0 0 560 210" style="width:100%;height:auto;">
+    <polygon points="280,10 460,190 100,190" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+    <line x1="145" y1="145" x2="415" y2="145" stroke="#cbd5e1" stroke-width="2"/>
+    <line x1="190" y1="100" x2="370" y2="100" stroke="#cbd5e1" stroke-width="2"/>
+    <line x1="235" y1="55" x2="325" y2="55" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="280" y="172" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Personal Hygiene</text>
+    <text x="280" y="127" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Food &amp; Water Safety</text>
+    <text x="280" y="82" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Camp Sanitation</text>
+    <text x="280" y="38" text-anchor="middle" font-size="11" font-weight="700" fill="#04815c">Disease Prevention</text>
+  </svg>
+  <p class="mute2 mt-1" style="font-size:11.5px;">Foundational habits at the base support everything above — weak personal hygiene undermines all higher-level prevention.</p></div>`;
+}
+function diagramMR(){
+  return `<div class="diagram-wrap mb-2"><div class="h3 mb-2">Bearing &amp; Grid Reference Basics</div>
+  <svg viewBox="0 0 560 210" style="width:100%;height:auto;">
+    <circle cx="140" cy="105" r="80" fill="#eaf0ff" stroke="#2554e0" stroke-width="2"/>
+    <line x1="140" y1="25" x2="140" y2="185" stroke="#cbd5e1" stroke-width="1.5"/>
+    <line x1="60" y1="105" x2="220" y2="105" stroke="#cbd5e1" stroke-width="1.5"/>
+    <line x1="140" y1="105" x2="185" y2="55" stroke="#2554e0" stroke-width="3"/>
+    <polygon points="185,55 174,60 179,68" fill="#2554e0"/>
+    <text x="140" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">N</text>
+    <text x="140" y="200" text-anchor="middle" font-size="11" fill="#475569">S</text>
+    <text x="45" y="109" text-anchor="middle" font-size="11" fill="#475569">W</text>
+    <text x="235" y="109" text-anchor="middle" font-size="11" fill="#475569">E</text>
+    <text x="196" y="52" font-size="10.5" fill="#2554e0" font-weight="700">Bearing 042°</text>
+
+    <g transform="translate(320,25)">
+      <rect x="0" y="0" width="180" height="160" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+      <line x1="60" y1="0" x2="60" y2="160" stroke="#cbd5e1"/>
+      <line x1="120" y1="0" x2="120" y2="160" stroke="#cbd5e1"/>
+      <line x1="0" y1="53" x2="180" y2="53" stroke="#cbd5e1"/>
+      <line x1="0" y1="106" x2="180" y2="106" stroke="#cbd5e1"/>
+      <circle cx="90" cy="80" r="5" fill="#04815c"/>
+      <text x="90" y="-8" text-anchor="middle" font-size="10.5" fill="#0f172a" font-weight="700">Grid Reference: read EAST then NORTH</text>
+      <text x="90" y="178" text-anchor="middle" font-size="10" fill="#475569">"along the corridor, up the stairs"</text>
+    </g>
+  </svg></div>`;
+}
+function terrain3dBlock(){
+  return `<div class="diagram-wrap">
+    <div class="flex items-center justify-between mb-2"><div class="h3">Interactive 3D Terrain Model</div><span class="mute2" style="font-size:11px;">🖱️ Drag to rotate</span></div>
+    <div class="terrain3d" style="height:230px;display:flex;align-items:center;justify-content:center;">
+      <div class="terrain3d-inner" id="terrainInner" style="width:260px;height:260px;" onmousedown="TERRAIN_DRAG=true; TERRAIN_LAST=event.clientX;" ontouchstart="TERRAIN_DRAG=true; TERRAIN_LAST=event.touches[0].clientX;">
+        ${terrainSvg()}
+      </div>
+    </div>
+    <p class="mute2 mt-1" style="font-size:11px;">Simplified interactive contour visualization for classroom demonstration. A full camera-based AR terrain overlay would run via WebXR on a mobile AR-capable device.</p>
+  </div>`;
+}
+function terrainSvg(){
+  return `<svg viewBox="0 0 260 260" style="width:100%;height:100%;">
+    <ellipse cx="130" cy="130" rx="120" ry="120" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+    <ellipse cx="120" cy="120" rx="95" ry="95" fill="none" stroke="#04815c" stroke-width="1.5" opacity=".35"/>
+    <ellipse cx="115" cy="115" rx="68" ry="68" fill="none" stroke="#04815c" stroke-width="1.5" opacity=".55"/>
+    <ellipse cx="112" cy="112" rx="42" ry="42" fill="none" stroke="#04815c" stroke-width="1.5" opacity=".8"/>
+    <ellipse cx="110" cy="110" rx="18" ry="18" fill="#04815c" opacity=".85"/>
+    <text x="110" y="106" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">412m</text>
+    <text x="110" y="60" text-anchor="middle" font-size="9" fill="#0f172a" font-weight="700">HILL</text>
+    <ellipse cx="195" cy="195" rx="26" ry="26" fill="none" stroke="#2554e0" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <text x="195" y="199" text-anchor="middle" font-size="8" fill="#2554e0" font-weight="700">DEPRESSION</text>
+  </svg>`;
+}
+function diagramFCBC(){
+  return `<div class="diagram-wrap mb-2"><div class="h3 mb-2">Cover from View vs. Cover from Fire</div>
+  <svg viewBox="0 0 560 170" style="width:100%;height:auto;">
+    <rect x="10" y="20" width="255" height="130" rx="10" fill="#e3f7ef" stroke="#04815c" stroke-width="1.5"/>
+    <circle cx="200" cy="110" r="26" fill="#065f46" opacity=".18"/>
+    <path d="M180 130 Q195 90 220 130 Q235 100 245 130 L245 140 L180 140 Z" fill="#04815c" opacity=".5"/>
+    <circle cx="200" cy="112" r="9" fill="#0f172a"/>
+    <text x="135" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#04815c">COVER FROM VIEW</text>
+    <text x="135" y="56" text-anchor="middle" font-size="10" fill="#475569">Concealed behind foliage — not seen</text>
+
+    <rect x="295" y="20" width="255" height="130" rx="10" fill="#eaf0ff" stroke="#2554e0" stroke-width="1.5"/>
+    <rect x="465" y="95" width="46" height="45" fill="#94a3b8"/>
+    <circle cx="485" cy="112" r="9" fill="#0f172a"/>
+    <text x="420" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#2554e0">COVER FROM FIRE</text>
+    <text x="420" y="56" text-anchor="middle" font-size="10" fill="#475569">Solid rock — physically protected</text>
+  </svg></div>
+  <div class="diagram-wrap"><div class="h3 mb-2">Standard Field Signals</div>
+  <div class="grid grid-3">
+    <div style="text-align:center;"><svg viewBox="0 0 90 90" style="width:70px;"><circle cx="45" cy="30" r="10" fill="#0f172a"/><line x1="45" y1="40" x2="45" y2="65" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="45" x2="70" y2="20" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="65" x2="30" y2="85" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="65" x2="60" y2="85" stroke="#0f172a" stroke-width="5"/></svg><div style="font-size:12px;font-weight:700;">Advance</div></div>
+    <div style="text-align:center;"><svg viewBox="0 0 90 90" style="width:70px;"><circle cx="45" cy="30" r="10" fill="#0f172a"/><line x1="45" y1="40" x2="45" y2="65" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="45" x2="20" y2="45" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="45" x2="70" y2="45" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="65" x2="35" y2="85" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="65" x2="55" y2="85" stroke="#0f172a" stroke-width="5"/></svg><div style="font-size:12px;font-weight:700;">Halt</div></div>
+    <div style="text-align:center;"><svg viewBox="0 0 90 90" style="width:70px;"><circle cx="45" cy="55" r="10" fill="#0f172a"/><line x1="45" y1="65" x2="45" y2="80" stroke="#0f172a" stroke-width="5"/><line x1="30" y1="35" x2="60" y2="35" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="65" x2="30" y2="45" stroke="#0f172a" stroke-width="5"/><line x1="45" y1="65" x2="60" y2="45" stroke="#0f172a" stroke-width="5"/></svg><div style="font-size:12px;font-weight:700;">Take Cover</div></div>
+  </div></div>`;
+}
+function diagramGA(){
+  return `<div class="diagram-wrap"><div class="h3 mb-2">NCC Organisational Structure</div>
+  <svg viewBox="0 0 560 230" style="width:100%;height:auto;">
+    <rect x="210" y="10" width="140" height="38" rx="8" fill="#2554e0"/><text x="280" y="34" text-anchor="middle" font-size="11.5" fill="#fff" font-weight="700">DG NCC</text>
+    <line x1="280" y1="48" x2="280" y2="68" stroke="#cbd5e1" stroke-width="2"/>
+    <rect x="190" y="68" width="180" height="36" rx="8" fill="#eaf0ff" stroke="#2554e0" stroke-width="1.5"/><text x="280" y="90" text-anchor="middle" font-size="11" fill="#0f172a" font-weight="700">State Directorate</text>
+    <line x1="280" y1="104" x2="280" y2="124" stroke="#cbd5e1" stroke-width="2"/>
+    <rect x="200" y="124" width="160" height="36" rx="8" fill="#eaf0ff" stroke="#2554e0" stroke-width="1.5"/><text x="280" y="146" text-anchor="middle" font-size="11" fill="#0f172a" font-weight="700">Group Headquarters</text>
+    <line x1="280" y1="160" x2="280" y2="180" stroke="#cbd5e1" stroke-width="2"/>
+    <rect x="215" y="180" width="130" height="36" rx="8" fill="#e3f7ef" stroke="#04815c" stroke-width="1.5"/><text x="280" y="202" text-anchor="middle" font-size="11" fill="#0f172a" font-weight="700">NCC Unit (ANO)</text>
+
+    <rect x="20" y="180" width="150" height="36" rx="8" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/><text x="95" y="202" text-anchor="middle" font-size="10.5" fill="#0f172a" font-weight="700">🪖 Army Wing</text>
+    <rect x="390" y="180" width="150" height="36" rx="8" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/><text x="465" y="202" text-anchor="middle" font-size="10.5" fill="#0f172a" font-weight="700">⚓ Naval / ✈️ Air Wing</text>
+  </svg></div>`;
+}
+
+/* ======================= SESSION SCREEN — PHASE 1 ======================= */
+function sessionHeader(){
+  const sess = STATE.session; const s = CONTENT[sess.subject];
+  const labels = ['','Theory','Exam Drill','Discussion','Doubt Clearing'];
+  return `
+  <div class="section-title">
+    <div class="subj-icon" style="background:var(--${s.accent}-soft);">${s.icon}</div>
+    <div style="flex:1;"><div class="eyebrow">${s.name} · Live Session</div><div class="h1">Phase ${sess.phase} — ${labels[sess.phase]}</div></div>
+    <div class="session-timer" id="sessionTimerWrap"><span id="sessionTimerLabel">${fmtTime(sess.timeLeft)}</span></div>
+  </div>
+  <div class="phase-stepper">
+    ${[1,2,3,4].map(n=>`<div class="phase-step ${sess.phase===n?'active':sess.phase>n?'done':''}" style="cursor:pointer;" onclick="sessionGoPhase(${n})"><div class="pn">STAGE 0${n}</div><div class="pt">${labels[n]}</div></div>`).join('')}
+  </div>`;
+}
+SCREEN_RENDERERS['session'] = function(){
+  const sess = STATE.session;
+  if(!sess) return emptyState('No active session — pick a module to begin.');
+  let body = sess.phase===1 ? renderPhase1() : sess.phase===2 ? renderPhase2() : sess.phase===3 ? renderPhase3() : renderPhase4();
+  return sessionHeader() + body;
+};
+SCREEN_AFTER['session'] = function(){ if(STATE.session && STATE.session.phase===1) updateAudioUI(); if(STATE.session && STATE.session.phase===4) scrollChatToBottom(); };
+
+function renderPhase1(){
+  const sess = STATE.session; const tab = sess.phase1Tab || 'notes';
+  return `
+  <div class="tabs">
+    <div class="tab ${tab==='notes'?'active':''}" onclick="setPhase1Tab('notes')">📖 Lecture Notes</div>
+    <div class="tab ${tab==='flashcards'?'active':''}" onclick="setPhase1Tab('flashcards')">🗂️ Flashcards</div>
+    <div class="tab ${tab==='diagrams'?'active':''}" onclick="setPhase1Tab('diagrams')">🗺️ Diagrams &amp; Terrain</div>
+  </div>
+  ${tab==='notes' ? renderNotesTab() : tab==='flashcards' ? renderFlashcardsTab() : renderDiagramsTab()}
+  <div class="flex justify-between mt-3">
+    <button class="btn btn-ghost" onclick="stopPhaseTimer(); audioStop(); goto('subject-home',{currentSubject:'${sess.subject}'})">Exit Session</button>
+    <button class="btn btn-primary btn-lg" onclick="sessionGoPhase(2)">Continue to Exam Drill →</button>
+  </div>`;
+}
+function setPhase1Tab(tab){ STATE.session.phase1Tab = tab; if(tab!=='notes') audioPause(); afterShellRender(); }
+function renderNotesTab(){
+  const sess = STATE.session;
+  return `
+  <div class="audio-bar mb-3">
+    <div class="flex items-center gap-2">
+      <button class="icon-btn" onclick="audioReplay()" title="Replay">⏮</button>
+      <button class="icon-btn" id="audioPlayBtn" onclick="sess_toggleAudio()" title="Play / Pause">▶</button>
+      <button class="icon-btn" onclick="audioStop()" title="Stop">⏹</button>
+      <span class="mono mute2" id="audioTimeLabel" style="font-size:11.5px;min-width:56px;">1 / ${sess.sentences.length}</span>
+      <span class="mute2" style="font-size:11px;flex:1;text-align:right;">Read-aloud · ${LANGS[STATE.language]}</span>
+    </div>
+    <div class="seek-track" id="seekTrack" onmousedown="SEEK_DRAGGING=true; handleSeekClick(event)" ontouchstart="SEEK_DRAGGING=true; handleSeekTouch(event)">
+      <div class="seek-fill" id="seekFill"></div><div class="seek-thumb" id="seekThumb"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flex justify-between items-center mb-2">
+      <span class="badge ${sess.notesSource==='ai'?'badge-emerald':(sess.notesSource==='translated'?'badge-blue':'badge-gray')}">${sess.notesSource==='ai'?'✨ AI-Generated':(sess.notesSource==='translated'?'🌐 Translated ('+LANGS[STATE.language]+')':'📘 Standard Curriculum')}</span>
+      <button class="btn btn-ghost btn-sm" id="regenBtn" onclick="regenerateNotes()">✨ Regenerate with AI</button>
+    </div>
+    ${sess.notes.map(n=>`<div class="mb-2"><div class="h3" style="color:var(--blue);">${escapeHtml(n.heading)}</div><p class="muted mt-1" style="font-size:13.5px;line-height:1.65;">${escapeHtml(n.body)}</p></div>`).join('')}
+  </div>`;
+}
+async function regenerateNotes(){
+  const btn = $('#regenBtn'); if(btn){ btn.disabled=true; btn.textContent='Generating…'; }
+  audioStop();
+  const fresh = await aiGenerateNotes(CONTENT[STATE.session.subject]);
+  if(fresh){ STATE.session.notes = fresh; STATE.session.notesSource='ai'; buildSentences(); toast('AI-generated notes loaded','success'); }
+  else { toast(STATE.offline ? 'Offline mode — showing standard curriculum notes' : 'AI unavailable right now — showing standard curriculum notes', 'error'); }
+  afterShellRender();
+}
+function renderDiagramsTab(){
+  const key = STATE.session.subject;
+  if(key==='HH') return diagramHH();
+  if(key==='MR') return diagramMR() + terrain3dBlock();
+  if(key==='FCBC') return diagramFCBC();
+  return diagramGA();
+}
+let TERRAIN_DRAG=false, TERRAIN_LAST=0, TERRAIN_ROT=0;
+window.addEventListener('mousemove', e=>{ if(TERRAIN_DRAG){ const dx=e.clientX-TERRAIN_LAST; TERRAIN_LAST=e.clientX; TERRAIN_ROT+=dx*0.4; applyTerrainRot(); } });
+window.addEventListener('mouseup', ()=> TERRAIN_DRAG=false);
+window.addEventListener('touchmove', e=>{ if(TERRAIN_DRAG && e.touches[0]){ const dx=e.touches[0].clientX-TERRAIN_LAST; TERRAIN_LAST=e.touches[0].clientX; TERRAIN_ROT+=dx*0.4; applyTerrainRot(); } }, {passive:true});
+window.addEventListener('touchend', ()=> TERRAIN_DRAG=false);
+function applyTerrainRot(){ const el=$('#terrainInner'); if(el) el.style.transform = 'rotateX(46deg) rotateZ('+TERRAIN_ROT+'deg)'; }
+
+/* ======================= SESSION SCREEN — PHASE 2: EXAM DRILL ======================= */
+function renderPhase2(){
+  const sess = STATE.session;
+  if(sess.submitted) return renderQuizResults();
+  const q = sess.quiz[sess.currentQ];
+  return `
+  <div class="card mb-2">
+    <div class="flex justify-between items-center mb-2">
+      <span class="badge ${sess.quizSource==='ai'?'badge-emerald':'badge-gray'}">${sess.quizSource==='ai'?'AI-Generated':'Standard Bank'}</span>
+      <span class="mono mute2" style="font-size:12px;">Question ${sess.currentQ+1} of ${sess.quiz.length}</span>
+    </div>
+    <div class="pill-row mb-3">${sess.quiz.map((_,i)=>`<span class="badge ${i===sess.currentQ?'badge-blue':(sess.answers[i]!=null?'badge-emerald':'badge-gray')}" style="cursor:pointer;" onclick="jumpToQ(${i})">${i+1}</span>`).join('')}</div>
+    <div class="h3 mb-3">${escapeHtml(q.q)}</div>
+    ${q.options.map((opt,i)=>`
+      <div class="quiz-option ${sess.answers[sess.currentQ]===i?'selected':''}" onclick="selectAnswer(${i})">
+        <span class="opt-letter">${String.fromCharCode(65+i)}</span><span>${escapeHtml(opt)}</span>
+      </div>`).join('')}
+  </div>
+  <div class="flex justify-between">
+    <button class="btn btn-ghost" onclick="jumpToQ(${Math.max(0,sess.currentQ-1)})" ${sess.currentQ===0?'disabled':''}>Previous</button>
+    ${sess.currentQ<sess.quiz.length-1
+      ? `<button class="btn btn-primary" onclick="jumpToQ(${sess.currentQ+1})">Next</button>`
+      : `<button class="btn btn-emerald btn-lg" onclick="finalizeQuiz()">Submit Exam Drill</button>`}
+  </div>`;
+}
+function jumpToQ(i){ STATE.session.currentQ = clamp(i,0,STATE.session.quiz.length-1); afterShellRender(); }
+function selectAnswer(i){ STATE.session.answers[STATE.session.currentQ] = i; afterShellRender(); }
+function finalizeQuiz(){
+  const sess = STATE.session;
+  let score = 0;
+  sess.quiz.forEach((q,i)=>{ if(sess.answers[i]===q.correct) score++; });
+  sess.score = score; sess.submitted = true;
+  saveModuleAttempt(sess.subject, score, sess.quiz.length);
+  afterShellRender();
+}
+function gradeFor(score,total){
+  const pct = score/total;
+  if(score===total) return {label:'COMBAT READY', grade:'A+', cls:'a'};
+  if(pct>=0.8) return {label:'COMBAT READY', grade:'A', cls:'a'};
+  if(pct>=0.6) return {label:'FIELD READY', grade:'B', cls:'b'};
+  if(pct>=0.4) return {label:'REQUIRES DRILLING', grade:'C', cls:'c'};
+  return {label:'STAND DOWN - RETRAIN', grade:'D', cls:'d'};
+}
+async function saveModuleAttempt(key, score, total){
+  if(!STATE.moduleProgress) STATE.moduleProgress = {};
+  if(!STATE.moduleProgress[key]) STATE.moduleProgress[key] = {attempts:[], syllabusPct: syllabusPctFor(key)};
+  STATE.moduleProgress[key].attempts.push({date:new Date().toISOString().slice(0,10), score:score, total:total});
+  STATE.moduleProgress[key].syllabusPct = Math.min(100, (STATE.moduleProgress[key].syllabusPct||50) + 4);
+  await saveData('moduleProgress', STATE.moduleProgress, true);
+}
+function renderQuizResults(){
+  const sess = STATE.session; const g = gradeFor(sess.score, sess.quiz.length);
+  return `
+  <div class="card tframe" style="text-align:center;padding:34px;">
+    <div class="eyebrow mb-2">Exam Drill Complete</div>
+    <div class="grade-badge ${g.cls}"><div class="grade-letter">${g.grade}</div><div class="grade-label">${g.label}</div></div>
+    <div class="h2 mt-3">${sess.score} / ${sess.quiz.length} Correct</div>
+    <div class="progress mt-2" style="max-width:320px;margin:12px auto 0;"><div class="progress-fill" style="width:${(sess.score/sess.quiz.length)*100}%"></div></div>
+  </div>
+  <div class="flex justify-center mt-3"><button class="btn btn-primary btn-lg" onclick="sessionGoPhase(3)">Continue to Discussion</button></div>`;
+}
+
+/* ======================= PHASE 3: DISCUSSION ======================= */
+function renderPhase3(){
+  const sess = STATE.session;
+  return `
+  <div class="card mb-2"><div class="h3 mb-1">Step-by-Step Rationale</div><p class="muted" style="font-size:12.5px;">Every question, the correct answer, and why.</p></div>
+  ${sess.quiz.map((q,i)=>{
+    const userAns = sess.answers[i]; const correct = q.correct; const isCorrect = userAns===correct;
+    return `<div class="card mb-2">
+      <div class="flex items-center gap-2 mb-2"><span class="badge ${isCorrect?'badge-emerald':'badge-red'}">${isCorrect?'Correct':'Incorrect'}</span><span class="mono mute2" style="font-size:11.5px;">Q${i+1}</span></div>
+      <div style="font-weight:650;font-size:13.5px;margin-bottom:8px;">${escapeHtml(q.q)}</div>
+      ${q.options.map((opt,oi)=>`<div class="quiz-option ${oi===correct?'correct':(oi===userAns?'wrong':'')}" style="cursor:default;"><span class="opt-letter">${String.fromCharCode(65+oi)}</span><span>${escapeHtml(opt)}</span></div>`).join('')}
+      <p class="muted mt-2" style="font-size:12.5px;background:var(--surface-2);padding:10px 12px;border-radius:8px;"><b>Rationale:</b> ${escapeHtml(q.rationale||'')}</p>
+    </div>`;
+  }).join('')}
+  <div class="flex justify-end mt-2"><button class="btn btn-primary btn-lg" onclick="sessionGoPhase(4)">Continue to Doubt Clearing</button></div>`;
+}
+
+/* ======================= PHASE 4: DOUBT CLEARING ======================= */
+function renderPhase4(){
+  const sess = STATE.session;
+  return `
+  <div class="chat-panel">
+    <div class="chat-log" id="chatLog">
+      ${sess.chatHistory.length===0 ? `<div class="chat-bubble chat-ai">Hi, I am here to help with any doubts about <b>${escapeHtml(CONTENT[sess.subject].name)}</b>. Ask me anything from today session.</div>` : ''}
+      ${sess.chatHistory.map(m=>`<div class="chat-bubble ${m.role==='user'?'chat-user':'chat-ai'}">${escapeHtml(m.content)}</div>`).join('')}
+    </div>
+    <div class="chat-input-row">
+      <button class="icon-btn ${STATE.voiceOn?'active':''}" title="Voice input" onclick="toggleVoice()">🎙️</button>
+      <input class="input" id="chatInput" placeholder="Type your doubt..." onkeydown="if(event.key==='Enter') sendDoubt()" />
+      <button class="btn btn-primary" onclick="sendDoubt()">Send</button>
+    </div>
+  </div>
+  <div class="flex justify-between mt-3">
+    <button class="btn btn-ghost" onclick="sessionGoPhase(3)">Back to Discussion</button>
+    <button class="btn btn-emerald btn-lg" onclick="completeSession()">Complete Session</button>
+  </div>`;
+}
+function scrollChatToBottom(){ const log=$('#chatLog'); if(log) log.scrollTop = log.scrollHeight; }
+async function sendDoubt(){
+  const input = $('#chatInput'); const question = (input && input.value ? input.value : '').trim();
+  if(!question) return;
+  const sess = STATE.session;
+  sess.chatHistory.push({role:'user', content:question});
+  if(input) input.value = '';
+  afterShellRender();
+  const notesText = sess.notes.map(n=>n.heading+': '+n.body).join(' ');
+  const historyForAI = sess.chatHistory.slice(0,-1);
+  const answer = await aiAskDoubt(CONTENT[sess.subject], notesText, historyForAI, question);
+  sess.chatHistory.push({role:'assistant', content: answer || fallbackDoubtAnswer(sess.subject)});
+  afterShellRender();
+}
+function fallbackDoubtAnswer(key){
+  return 'Offline mode is on, so a live AI answer is not available right now. This is a good question to note down for your ANO, or revisit the Lecture Notes and Discussion tabs for ' + CONTENT[key].name + ' which cover the core concepts.';
+}
+
+/* ======================= SESSION COMPLETE ======================= */
+function completeSession(){ audioStop(); stopPhaseTimer(); goto('session-complete'); }
+SCREEN_RENDERERS['session-complete'] = function(){
+  const sess = STATE.session; const s = CONTENT[sess.subject]; const g = gradeFor(sess.score, sess.quiz.length);
+  const mins = Math.max(1, Math.round((Date.now()-sess.startedAt)/60000));
+  return `
+  <div class="section-title"><div><div class="eyebrow">Session Report</div><div class="h1">${s.name} - Complete</div></div></div>
+  <div class="grid grid-2">
+    <div class="card tframe" style="text-align:center;padding:30px;">
+      <div class="grade-badge ${g.cls}"><div class="grade-letter">${g.grade}</div><div class="grade-label">${g.label}</div></div>
+      <div class="h2 mt-3">${sess.score}/${sess.quiz.length} on Exam Drill</div>
+    </div>
+    <div class="card">
+      <div class="h3 mb-2">Session Summary</div>
+      <div class="flex justify-between" style="padding:7px 0;border-bottom:1px solid var(--border);"><span class="muted" style="font-size:13px;">Module</span><span style="font-weight:650;font-size:13px;">${s.name}</span></div>
+      <div class="flex justify-between" style="padding:7px 0;border-bottom:1px solid var(--border);"><span class="muted" style="font-size:13px;">Time in session</span><span class="mono" style="font-size:13px;">~${mins} min</span></div>
+      <div class="flex justify-between" style="padding:7px 0;border-bottom:1px solid var(--border);"><span class="muted" style="font-size:13px;">Notes source</span><span style="font-size:13px;">${sess.notesSource==='ai'?'AI-generated':(sess.notesSource==='translated'?'Translated':'Standard curriculum')}</span></div>
+      <div class="flex justify-between" style="padding:7px 0;"><span class="muted" style="font-size:13px;">Doubts raised</span><span class="mono" style="font-size:13px;">${sess.chatHistory.filter(m=>m.role==='user').length}</span></div>
+      <button class="btn btn-primary btn-block mt-3" onclick="exportSessionPDF()">Download Session Report (PDF)</button>
+    </div>
+  </div>
+  <div class="flex justify-center gap-2 mt-3">
+    <button class="btn btn-ghost btn-lg" onclick="goto('subject-home',{currentSubject:'${sess.subject}'})">Back to Module</button>
+    <button class="btn btn-emerald btn-lg" onclick="goto(STATE.mode==='pc'?'pc-dashboard':'kiosk-dashboard')">Return to Dashboard</button>
+  </div>`;
+};
+
+/* ======================= PDF EXPORT (jsPDF) ======================= */
+function getJsPDFCtor(){
+  if(window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
+  toast('PDF engine unavailable - check your internet connection', 'error');
+  return null;
+}
+function exportLessonPlanPDF(key){
+  const JsPDF = getJsPDFCtor(); if(!JsPDF) return;
+  const s = CONTENT[key];
+  const doc = new JsPDF();
+  let y = 20;
+  doc.setFontSize(16); doc.setFont(undefined,'bold'); doc.text('PROJECT PROMETHEUS - Lesson Plan', 14, y); y += 8;
+  doc.setFontSize(11); doc.setFont(undefined,'normal'); doc.text(s.name + '  -  Generated ' + new Date().toLocaleDateString('en-IN'), 14, y); y += 10;
+  doc.setDrawColor(200); doc.line(14,y,196,y); y += 8;
+  doc.setFontSize(13); doc.setFont(undefined,'bold'); doc.text('Lecture Notes', 14, y); y += 7;
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  s.notes.forEach(function(n){
+    if(y>270){ doc.addPage(); y=20; }
+    doc.setFont(undefined,'bold'); doc.text(n.heading, 14, y); y += 5.5; doc.setFont(undefined,'normal');
+    const lines = doc.splitTextToSize(n.body, 180);
+    doc.text(lines, 14, y); y += lines.length*5 + 4;
+  });
+  doc.addPage(); y = 20;
+  doc.setFontSize(13); doc.setFont(undefined,'bold'); doc.text('Exam Drill - Questions and Rationale', 14, y); y += 8;
+  doc.setFontSize(10);
+  s.quiz.forEach(function(q,i){
+    if(y>255){ doc.addPage(); y=20; }
+    doc.setFont(undefined,'bold');
+    const qLines = doc.splitTextToSize((i+1)+'. '+q.q, 180); doc.text(qLines,14,y); y += qLines.length*5 + 2;
+    doc.setFont(undefined,'normal');
+    q.options.forEach(function(o,oi){
+      doc.text(String.fromCharCode(65+oi)+'. '+o+(oi===q.correct?'  (correct)':''), 18, y); y += 5;
+    });
+    const rLines = doc.splitTextToSize('Rationale: '+(q.rationale||''), 176);
+    doc.setFont(undefined,'italic'); doc.text(rLines,18,y); y += rLines.length*5 + 6; doc.setFont(undefined,'normal');
+  });
+  doc.save('Prometheus-LessonPlan-'+s.short.replace(/\s+/g,'')+'.pdf');
+  toast('Lesson plan downloaded', 'success');
+}
+function exportSessionPDF(){
+  const JsPDF = getJsPDFCtor(); if(!JsPDF) return;
+  const sess = STATE.session; const s = CONTENT[sess.subject]; const g = gradeFor(sess.score, sess.quiz.length);
+  const doc = new JsPDF(); let y = 20;
+  const officerName = (STATE.profile && STATE.profile.name) ? STATE.profile.name : '';
+  doc.setFontSize(16); doc.setFont(undefined,'bold'); doc.text('PROJECT PROMETHEUS - Session Report', 14, y); y += 8;
+  doc.setFontSize(11); doc.setFont(undefined,'normal'); doc.text(s.name + '  -  ' + officerName + '  -  ' + new Date().toLocaleDateString('en-IN'), 14, y); y += 10;
+  doc.setDrawColor(200); doc.line(14,y,196,y); y += 8;
+  doc.setFontSize(13); doc.setFont(undefined,'bold'); doc.text('Result: '+sess.score+'/'+sess.quiz.length+'  -  '+g.grade+' ('+g.label+')', 14, y); y += 10;
+  doc.text('Question Review', 14, y); y += 8; doc.setFontSize(10);
+  sess.quiz.forEach(function(q,i){
+    if(y>255){ doc.addPage(); y=20; }
+    const correct = sess.answers[i]===q.correct;
+    doc.setFont(undefined,'bold');
+    const qLines = doc.splitTextToSize((i+1)+'. '+q.q+'  ['+(correct?'CORRECT':'INCORRECT')+']', 180); doc.text(qLines,14,y); y += qLines.length*5 + 2;
+    doc.setFont(undefined,'normal'); doc.text('Correct answer: '+q.options[q.correct], 18, y); y += 5;
+    const rLines = doc.splitTextToSize('Rationale: '+(q.rationale||''), 176);
+    doc.setFont(undefined,'italic'); doc.text(rLines,18,y); y += rLines.length*5 + 6; doc.setFont(undefined,'normal');
+  });
+  doc.save('Prometheus-SessionReport-'+s.short.replace(/\s+/g,'')+'.pdf');
+  toast('Session report downloaded', 'success');
+}
+
+/* ======================= CUSTOM PDF VAULT ======================= */
+async function handlePdfUpload(inputEl){
+  const file = inputEl.files && inputEl.files[0];
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.pdf')){ toast('Please upload a PDF file','error'); return; }
+  toast('Reading PDF...', 'info');
+  try{
+    if(!window.pdfjsLib){ toast('PDF reader unavailable - check your internet connection','error'); return; }
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const buf = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({data:buf}).promise;
+    let fullText = '';
+    const maxPages = Math.min(pdf.numPages, 40);
+    for(let p=1; p<=maxPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      fullText += content.items.map(function(it){ return it.str; }).join(' ') + '\n';
+      if(fullText.length>20000) break;
+    }
+    fullText = fullText.slice(0,18000);
+    const entry = {id:uid(), name:file.name, text:fullText, uploadedBy:(STATE.profile&&STATE.profile.name)||'Unknown', date:new Date().toISOString().slice(0,10), summary:null, quiz:null, chatHistory:[]};
+    STATE.pdfVault.unshift(entry);
+    await saveData('pdfVault', STATE.pdfVault, true);
+    STATE.pdfVaultSelected = entry.id; STATE.pdfVaultTab = 'summary';
+    toast('PDF uploaded and indexed', 'success');
+    afterShellRender();
+  }catch(e){
+    console.error(e);
+    toast('Could not read this PDF file', 'error');
+  }
+}
+SCREEN_RENDERERS['pdf-vault'] = function(){
+  const selected = STATE.pdfVault.find(function(p){ return p.id===STATE.pdfVaultSelected; });
+  return `
+  <div class="section-title"><div><div class="eyebrow">Custom PDF Vault</div><div class="h1">Upload, Summarize &amp; Quiz</div></div></div>
+  <div class="card mb-3 tframe">
+    <div class="flex items-center gap-2">
+      <input type="file" accept="application/pdf" id="pdfUploadInput" style="display:none" onchange="handlePdfUpload(this)" />
+      <button class="btn btn-primary" onclick="document.getElementById('pdfUploadInput').click()">Upload PDF</button>
+      <span class="mute2" style="font-size:12px;">Extracted client-side in your browser - text stays in this workspace.</span>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:280px 1fr;">
+    <div class="card" style="max-height:520px;overflow-y:auto;">
+      <div class="h3 mb-2">Your Documents (${STATE.pdfVault.length})</div>
+      ${STATE.pdfVault.length ? STATE.pdfVault.map(function(p){ return `
+        <div class="flex items-center justify-between" style="padding:9px 6px;border-radius:8px;cursor:pointer;background:${p.id===STATE.pdfVaultSelected?'var(--blue-soft)':'transparent'};" onclick="selectPdf('${p.id}')">
+          <div style="min-width:0;"><div style="font-weight:650;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">${escapeHtml(p.name)}</div><div class="mute2" style="font-size:10.5px;">${fmtDate(p.date)}</div></div>
+          <button class="icon-btn" style="width:26px;height:26px;" title="Delete" onclick="event.stopPropagation(); deletePdf('${p.id}')">x</button>
+        </div>`; }).join('') : emptyState('No PDFs uploaded yet','\ud83d\udcc4')}
+    </div>
+    <div>${selected ? renderPdfDetail(selected) : ('<div class="card">'+emptyState('Select or upload a PDF to get started','\ud83d\udcc4')+'</div>')}</div>
+  </div>`;
+};
+function renderPdfDetail(p){
+  const tab = STATE.pdfVaultTab || 'summary';
+  return `
+  <div class="tabs">
+    <div class="tab ${tab==='summary'?'active':''}" onclick="setPdfTab('summary')">Executive Summary</div>
+    <div class="tab ${tab==='chat'?'active':''}" onclick="setPdfTab('chat')">Ask a Doubt</div>
+    <div class="tab ${tab==='quiz'?'active':''}" onclick="setPdfTab('quiz')">Custom Assessment</div>
+  </div>
+  ${tab==='summary' ? renderPdfSummary(p) : tab==='chat' ? renderPdfChat(p) : renderPdfQuiz(p)}`;
+}
+function setPdfTab(tab){ STATE.pdfVaultTab = tab; afterShellRender(); }
+function selectPdf(id){ STATE.pdfVaultSelected = id; STATE.pdfVaultTab = 'summary'; afterShellRender(); }
+async function deletePdf(id){
+  STATE.pdfVault = STATE.pdfVault.filter(function(p){ return p.id!==id; });
+  if(STATE.pdfVaultSelected===id) STATE.pdfVaultSelected = null;
+  await saveData('pdfVault', STATE.pdfVault, true);
+  toast('Document removed', 'success');
+  afterShellRender();
+}
+function renderPdfSummary(p){
+  return `<div class="card">
+    ${p.summary ? ('<ul>'+p.summary.map(function(b){ return '<li class="muted" style="font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--border);">- '+escapeHtml(b)+'</li>'; }).join('')+'</ul>') : emptyState('No summary generated yet','\ud83e\uddfe')}
+    <button class="btn btn-primary mt-2" id="summBtn" onclick="genPdfSummary('${p.id}')">${p.summary?'Regenerate Summary':'Generate Executive Summary'}</button>
+  </div>`;
+}
+async function genPdfSummary(id){
+  const btn = $('#summBtn'); if(btn){ btn.disabled=true; btn.textContent='Summarizing...'; }
+  const p = STATE.pdfVault.find(function(x){ return x.id===id; }); if(!p) return;
+  const result = await aiSummarizeText(p.text);
+  if(result){ p.summary = result; await saveData('pdfVault', STATE.pdfVault, true); toast('Summary generated','success'); }
+  else { toast(STATE.offline ? 'Offline mode is on' : 'AI unavailable right now', 'error'); }
+  afterShellRender();
+}
+function renderPdfChat(p){
+  return `<div class="chat-panel">
+    <div class="chat-log" id="chatLog">
+      ${p.chatHistory.length===0 ? ('<div class="chat-bubble chat-ai">Ask me anything about \"'+escapeHtml(p.name)+'\".</div>') : ''}
+      ${p.chatHistory.map(function(m){ return '<div class="chat-bubble '+(m.role==='user'?'chat-user':'chat-ai')+'">'+escapeHtml(m.content)+'</div>'; }).join('')}
+    </div>
+    <div class="chat-input-row">
+      <input class="input" id="pdfChatInput" placeholder="Ask a doubt about this document..." onkeydown="if(event.key==='Enter') sendPdfDoubt('${p.id}')" />
+      <button class="btn btn-primary" onclick="sendPdfDoubt('${p.id}')">Send</button>
+    </div>
+  </div>`;
+}
+async function sendPdfDoubt(id){
+  const input = $('#pdfChatInput'); const q = (input && input.value ? input.value : '').trim(); if(!q) return;
+  const p = STATE.pdfVault.find(function(x){ return x.id===id; }); if(!p) return;
+  p.chatHistory.push({role:'user', content:q});
+  if(input) input.value = '';
+  afterShellRender();
+  const answer = await aiChatOnDoc(p.text, p.chatHistory.slice(0,-1), q);
+  p.chatHistory.push({role:'assistant', content: answer || 'Offline mode is on, so a live answer is not available right now. Try again once connected.'});
+  await saveData('pdfVault', STATE.pdfVault, true);
+  afterShellRender();
+}
+function renderPdfQuiz(p){
+  return `<div class="card">
+    ${p.quiz ? p.quiz.map(function(q,i){ return '<div class="mb-2"><div style="font-weight:650;font-size:13.5px;">'+(i+1)+'. '+escapeHtml(q.q)+'</div>'
+      + q.options.map(function(o,oi){ return '<div class="quiz-option '+(oi===q.correct?'correct':'')+'" style="cursor:default;"><span class="opt-letter">'+String.fromCharCode(65+oi)+'</span><span>'+escapeHtml(o)+'</span></div>'; }).join('')
+      + '</div>'; }).join('') : emptyState('No custom assessment generated yet','\ud83d\udcdd')}
+    <button class="btn btn-primary mt-2" id="quizBtn" onclick="genPdfQuiz('${p.id}')">${p.quiz?'Regenerate Assessment':'Create Custom Assessment'}</button>
+  </div>`;
+}
+async function genPdfQuiz(id){
+  const btn = $('#quizBtn'); if(btn){ btn.disabled=true; btn.textContent='Generating...'; }
+  const p = STATE.pdfVault.find(function(x){ return x.id===id; }); if(!p) return;
+  const result = await aiQuizFromText(p.text);
+  if(result){ p.quiz = result; await saveData('pdfVault', STATE.pdfVault, true); toast('Custom quiz generated','success'); }
+  else { toast(STATE.offline ? 'Offline mode is on' : 'AI unavailable right now', 'error'); }
+  afterShellRender();
+}
+
+/* ======================= MODAL SYSTEM ======================= */
+function openModal(html){
+  let root = $('#modalRoot');
+  if(!root){ root = document.createElement('div'); root.id = 'modalRoot'; document.body.appendChild(root); }
+  root.innerHTML = '<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal">'+html+'</div></div>';
+}
+function closeModal(){ const root = $('#modalRoot'); if(root) root.innerHTML=''; }
+
+/* ======================= FINANCE & SYLLABUS ======================= */
+SCREEN_RENDERERS['pc-finance'] = function(){
+  const tab = STATE.financeTab || 'expenditure';
+  return `
+  <div class="section-title"><div><div class="eyebrow">Administration</div><div class="h1">Finance &amp; Syllabus</div></div></div>
+  <div class="tabs">
+    <div class="tab ${tab==='expenditure'?'active':''}" onclick="STATE.financeTab='expenditure'; afterShellRender();">Expenditure Tracking</div>
+    <div class="tab ${tab==='syllabus'?'active':''}" onclick="STATE.financeTab='syllabus'; afterShellRender();">Syllabus Progress</div>
+  </div>
+  ${tab==='expenditure' ? renderExpenditureTab() : renderSyllabusTab()}`;
+};
+function renderExpenditureTab(){
+  const spent = STATE.finance.expenditures.reduce(function(a,e){ return a+Number(e.amount||0); },0);
+  const remaining = STATE.finance.budget - spent;
+  return `
+  <div class="grid grid-3 mb-3">
+    <div class="card"><div class="muted" style="font-size:12px;">Allocated Budget</div><div class="stat-num mt-1">Rs. ${STATE.finance.budget.toLocaleString('en-IN')}</div></div>
+    <div class="card"><div class="muted" style="font-size:12px;">Spent</div><div class="stat-num mt-1" style="color:var(--red);">Rs. ${spent.toLocaleString('en-IN')}</div></div>
+    <div class="card"><div class="muted" style="font-size:12px;">Remaining</div><div class="stat-num mt-1" style="color:var(--emerald);">Rs. ${remaining.toLocaleString('en-IN')}</div><div class="progress mt-1"><div class="progress-fill" style="width:${clamp((spent/STATE.finance.budget)*100,0,100)}%"></div></div></div>
+  </div>
+  <div class="card mb-3">
+    <div class="h3 mb-2">Log Expenditure</div>
+    <div class="grid grid-4">
+      <div class="field" style="margin-bottom:0;"><label>Date</label><input class="input" id="expDate" type="date" value="${new Date().toISOString().slice(0,10)}"/></div>
+      <div class="field" style="margin-bottom:0;"><label>Category</label><select class="select" id="expCat"><option>Uniform</option><option>Transport</option><option>Camp</option><option>Stationery</option><option>First Aid</option><option>Other</option></select></div>
+      <div class="field" style="margin-bottom:0;"><label>Description</label><input class="input" id="expDesc" placeholder="e.g. Boots procurement"/></div>
+      <div class="field" style="margin-bottom:0;"><label>Amount (Rs.)</label><input class="input" id="expAmt" type="number" placeholder="0"/></div>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="addExpenditure()">Add Entry</button>
+  </div>
+  <div class="card">
+    <div class="h3 mb-2">Expenditure Log</div>
+    <table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th style="text-align:right;">Amount</th><th></th></tr></thead>
+    <tbody>${STATE.finance.expenditures.length ? STATE.finance.expenditures.slice().reverse().map(function(e){ return '<tr><td>'+fmtDate(e.date)+'</td><td><span class="badge badge-gray">'+escapeHtml(e.category)+'</span></td><td>'+escapeHtml(e.description)+'</td><td style="text-align:right;" class="mono">Rs. '+Number(e.amount).toLocaleString('en-IN')+'</td><td><button class="icon-btn" style="width:26px;height:26px;" onclick="deleteExpenditure(\''+e.id+'\')">x</button></td></tr>'; }).join('') : ('<tr><td colspan="5">'+emptyState('No expenditures logged yet')+'</td></tr>')}</tbody></table>
+  </div>`;
+}
+async function addExpenditure(){
+  const date = $('#expDate').value, category = $('#expCat').value, description = ($('#expDesc').value||'').trim(), amount = Number($('#expAmt').value||0);
+  if(!description || !amount){ toast('Enter a description and amount','error'); return; }
+  STATE.finance.expenditures.push({id:uid(), date:date, category:category, description:description, amount:amount});
+  await saveData('finance', STATE.finance, true);
+  toast('Expenditure logged','success');
+  afterShellRender();
+}
+async function deleteExpenditure(id){
+  STATE.finance.expenditures = STATE.finance.expenditures.filter(function(e){ return e.id!==id; });
+  await saveData('finance', STATE.finance, true);
+  afterShellRender();
+}
+function renderSyllabusTab(){
+  return '<div class="grid grid-2">' + subjectList().map(function(k){
+    const s = CONTENT[k]; const pct = syllabusPctFor(k);
+    return '<div class="card"><div class="flex items-center gap-2 mb-2"><div class="subj-icon" style="width:36px;height:36px;font-size:16px;background:var(--'+s.accent+'-soft);">'+s.icon+'</div><div class="h3">'+s.name+'</div></div>'
+      + '<div class="progress mb-1"><div class="progress-fill" style="width:'+pct+'%"></div></div><div class="mute2" style="font-size:12px;">'+pct+'% of syllabus complete</div></div>';
+  }).join('') + '</div>';
+}
+
+/* ======================= CADET ROSTER & ANALYTICS ======================= */
+SCREEN_RENDERERS['pc-roster'] = function(){
+  const filter = STATE.rosterFilter || 'all';
+  const filtered = filter==='all' ? STATE.cadets : STATE.cadets.filter(function(c){ return c.status===filter; });
+  return `
+  <div class="section-title"><div><div class="eyebrow">Administration</div><div class="h1">Cadet Roster &amp; Analytics</div></div>
+  <button class="btn btn-primary" onclick="openAddCadetModal()">Add Cadet</button></div>
+  <div class="grid grid-2 mb-3">
+    <div class="card"><div class="h3 mb-2">Average Score by Subject</div><canvas id="chartSubjAvg" height="180"></canvas></div>
+    <div class="card"><div class="h3 mb-2">Roster Composition</div><canvas id="chartComposition" height="180"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="tabs">
+      ${[['all','All Cadets'],['new','New Joinees'],['camp','In Camp'],['dropout','Dropouts']].map(function(pair){ return '<div class="tab '+(filter===pair[0]?'active':'')+'" onclick="STATE.rosterFilter=\''+pair[0]+'\'; afterShellRender();">'+pair[1]+'</div>'; }).join('')}
+    </div>
+    <table><thead><tr><th>Name</th><th>Reg No</th><th>Status</th><th>Attendance</th><th>H&amp;H</th><th>MR</th><th>FC&amp;BC</th><th>GA</th></tr></thead>
+    <tbody>${filtered.length ? filtered.map(function(c){ return '<tr style="cursor:pointer;" onclick="openCadetModal(\''+c.id+'\')"><td style="font-weight:650;">'+escapeHtml(c.name)+'</td><td class="mono">'+escapeHtml(c.regNo)+'</td><td>'+statusBadge(c.status)+'</td><td class="mono">'+c.attendance+'%</td><td class="mono">'+c.subjects.HH+'%</td><td class="mono">'+c.subjects.MR+'%</td><td class="mono">'+c.subjects.FCBC+'%</td><td class="mono">'+c.subjects.GA+'%</td></tr>'; }).join('') : ('<tr><td colspan="8">'+emptyState('No cadets in this filter')+'</td></tr>')}</tbody></table>
+  </div>`;
+};
+SCREEN_AFTER['pc-roster'] = function(){ renderRosterCharts(); };
+function destroyChart(id){ if(STATE.charts[id]){ STATE.charts[id].destroy(); delete STATE.charts[id]; } }
+function renderRosterCharts(){
+  if(!window.Chart) return;
+  const subjAvg = subjectList().map(function(k){
+    const vals = STATE.cadets.map(function(c){ return c.subjects[k]; });
+    return vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : 0;
+  });
+  destroyChart('chartSubjAvg');
+  const c1 = $('#chartSubjAvg');
+  if(c1){ STATE.charts.chartSubjAvg = new Chart(c1, {type:'bar', data:{labels:subjectList().map(function(k){return CONTENT[k].short;}), datasets:[{label:'Avg Score %', data:subjAvg, backgroundColor:['#04815c','#2554e0','#04815c','#2554e0']}]}, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}}); }
+  const counts = {active:0,new:0,camp:0,dropout:0};
+  STATE.cadets.forEach(function(c){ counts[c.status] = (counts[c.status]||0)+1; });
+  destroyChart('chartComposition');
+  const c2 = $('#chartComposition');
+  if(c2){ STATE.charts.chartComposition = new Chart(c2, {type:'doughnut', data:{labels:['Active','New Joinees','In Camp','Dropouts'], datasets:[{data:[counts.active,counts.new,counts.camp,counts.dropout], backgroundColor:['#04815c','#2554e0','#b5690a','#c22036']}]}, options:{plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}}}}}); }
+}
+function openAddCadetModal(){
+  openModal(`
+    <div class="modal-head"><div class="h3">Add Cadet</div><button class="icon-btn" onclick="closeModal()">x</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Full Name</label><input class="input" id="newCadetName"/></div>
+      <div class="field"><label>Registration No.</label><input class="input" id="newCadetReg" placeholder="e.g. KAR/SD/24/0091"/></div>
+      <div class="field"><label>Status</label><select class="select" id="newCadetStatus"><option value="active">Active</option><option value="new">New Joinee</option><option value="camp">In Camp</option><option value="dropout">Dropout</option></select></div>
+      <button class="btn btn-primary btn-block" onclick="addCadet()">Add Cadet</button>
+    </div>`);
+}
+async function addCadet(){
+  const name = ($('#newCadetName').value||'').trim();
+  const regNo = ($('#newCadetReg').value||'').trim() || ('NCC/'+Math.floor(1000+Math.random()*9000));
+  if(!name){ toast('Enter a cadet name','error'); return; }
+  const status = $('#newCadetStatus').value;
+  STATE.cadets.push({id:uid(), name:name, regNo:regNo, status:status, attendance: 80+Math.floor(Math.random()*15), joinDate:new Date().toISOString().slice(0,10),
+    subjects:{HH:50+Math.floor(Math.random()*40),MR:50+Math.floor(Math.random()*40),FCBC:50+Math.floor(Math.random()*40),GA:50+Math.floor(Math.random()*40)}});
+  await saveData('cadets', STATE.cadets, true);
+  closeModal(); toast('Cadet added','success'); afterShellRender();
+}
+function openCadetModal(id){
+  const c = STATE.cadets.find(function(x){ return x.id===id; }); if(!c) return;
+  openModal(`
+    <div class="modal-head"><div class="h3">${escapeHtml(c.name)}</div><button class="icon-btn" onclick="closeModal()">x</button></div>
+    <div class="modal-body">
+      <div class="pill-row mb-2">${statusBadge(c.status)}<span class="badge badge-gray mono">${escapeHtml(c.regNo)}</span></div>
+      <div class="flex justify-between mb-2"><span class="muted" style="font-size:13px;">Attendance</span><span class="mono" style="font-weight:700;">${c.attendance}%</span></div>
+      <canvas id="cadetRadar" height="200"></canvas>
+    </div>`);
+  setTimeout(function(){
+    if(!window.Chart) return;
+    const el = $('#cadetRadar'); if(!el) return;
+    new Chart(el, {type:'radar', data:{labels:['H&H','MR','FC&BC','GA'], datasets:[{label:c.name, data:[c.subjects.HH,c.subjects.MR,c.subjects.FCBC,c.subjects.GA], backgroundColor:'rgba(37,84,224,.15)', borderColor:'#2554e0'}]}, options:{scales:{r:{min:0,max:100}}}});
+  }, 30);
+}
+
+/* ======================= RECORDS & ARCHIVES ======================= */
+SCREEN_RENDERERS['pc-records'] = function(){
+  const tab = STATE.recordsTab || 'attendance';
+  return `
+  <div class="section-title"><div><div class="eyebrow">Administration</div><div class="h1">Records &amp; Archives</div></div></div>
+  <div class="tabs">
+    <div class="tab ${tab==='attendance'?'active':''}" onclick="STATE.recordsTab='attendance'; afterShellRender();">Attendance</div>
+    <div class="tab ${tab==='documents'?'active':''}" onclick="STATE.recordsTab='documents'; afterShellRender();">Document Repository</div>
+    <div class="tab ${tab==='achievements'?'active':''}" onclick="STATE.recordsTab='achievements'; afterShellRender();">Achievements Register</div>
+  </div>
+  ${tab==='attendance' ? renderAttendanceTab() : tab==='documents' ? renderDocumentsTab() : renderAchievementsTab()}`;
+};
+function renderAttendanceTab(){
+  return '<div class="card"><div class="h3 mb-2">Recent Attendance Log</div>'
+  + '<table><thead><tr><th>Date</th><th>Cadet</th><th>Method</th><th>Status</th></tr></thead><tbody>'
+  + (STATE.attendance.length ? STATE.attendance.slice().reverse().slice(0,25).map(function(a){ return '<tr><td>'+fmtDate(a.date)+'</td><td>'+escapeHtml(a.cadetName)+'</td><td><span class="badge badge-gray">'+escapeHtml(a.method)+'</span></td><td>'+(a.status==='present'?'<span class="badge badge-emerald">Present</span>':'<span class="badge badge-red">Absent</span>')+'</td></tr>'; }).join('') : ('<tr><td colspan="4">'+emptyState('No attendance logged yet')+'</td></tr>'))
+  + '</tbody></table></div>';
+}
+function renderDocumentsTab(){
+  return `<div class="card">
+    <div class="h3 mb-2">Add Document to Register</div>
+    <div class="grid grid-3">
+      <div class="field" style="margin-bottom:0;"><label>Title</label><input class="input" id="docTitle"/></div>
+      <div class="field" style="margin-bottom:0;"><label>Category</label><select class="select" id="docCat"><option>Certificate</option><option>Order/Circular</option><option>Camp Report</option><option>Medical Record</option><option>Other</option></select></div>
+      <div class="field" style="margin-bottom:0;"><label>Reference No.</label><input class="input" id="docRef" placeholder="Optional"/></div>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="addDocument()">Add to Register</button>
+  </div>
+  <div class="card mt-3"><div class="h3 mb-2">Document Register</div>
+  <table><thead><tr><th>Title</th><th>Category</th><th>Ref No.</th><th>Date</th></tr></thead>
+  <tbody>${STATE.documents.length ? STATE.documents.slice().reverse().map(function(d){ return '<tr><td style="font-weight:650;">'+escapeHtml(d.title)+'</td><td><span class="badge badge-gray">'+escapeHtml(d.category)+'</span></td><td class="mono">'+escapeHtml(d.ref||'-')+'</td><td>'+fmtDate(d.date)+'</td></tr>'; }).join('') : ('<tr><td colspan="4">'+emptyState('No documents indexed yet')+'</td></tr>')}</tbody></table></div>`;
+}
+async function addDocument(){
+  const title = ($('#docTitle').value||'').trim(); if(!title){ toast('Enter a title','error'); return; }
+  STATE.documents.push({id:uid(), title:title, category:$('#docCat').value, ref:$('#docRef').value, date:new Date().toISOString().slice(0,10)});
+  await saveData('documents', STATE.documents, true); toast('Added to register','success'); afterShellRender();
+}
+function renderAchievementsTab(){
+  return `<div class="card">
+    <div class="h3 mb-2">Add Achievement</div>
+    <div class="grid grid-3">
+      <div class="field" style="margin-bottom:0;"><label>Cadet / Unit</label><input class="input" id="achWho" placeholder="e.g. Cdt Kabir Singh"/></div>
+      <div class="field" style="margin-bottom:0;"><label>Title</label><input class="input" id="achTitle" placeholder="e.g. Best Cadet Award"/></div>
+      <div class="field" style="margin-bottom:0;"><label>Date</label><input class="input" id="achDate" type="date" value="${new Date().toISOString().slice(0,10)}"/></div>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="addAchievement()">Add to Register</button>
+  </div>
+  <div class="card mt-3"><div class="h3 mb-2">Achievements Register</div>
+  ${STATE.achievements.length ? STATE.achievements.slice().reverse().map(function(a){ return '<div class="flex items-center gap-2" style="padding:10px 0;border-bottom:1px solid var(--border);"><span style="font-size:18px;">\ud83c\udfc5</span><div><div style="font-weight:650;font-size:13.5px;">'+escapeHtml(a.title)+'</div><div class="mute2" style="font-size:11.5px;">'+escapeHtml(a.who)+' - '+fmtDate(a.date)+'</div></div></div>'; }).join('') : emptyState('No achievements recorded yet')}</div>`;
+}
+async function addAchievement(){
+  const who = ($('#achWho').value||'').trim(), title = ($('#achTitle').value||'').trim();
+  if(!who || !title){ toast('Enter both fields','error'); return; }
+  STATE.achievements.push({id:uid(), who:who, title:title, date:$('#achDate').value});
+  await saveData('achievements', STATE.achievements, true); toast('Achievement recorded','success'); afterShellRender();
+}
+
+/* ======================= EVENTS & BIOMETRIC ROLL CALL ======================= */
+SCREEN_RENDERERS['pc-events'] = function(){
+  const tab = STATE.eventsTab || 'calendar';
+  return `
+  <div class="section-title"><div><div class="eyebrow">Administration</div><div class="h1">Event Logs &amp; Roll Call</div></div></div>
+  <div class="tabs">
+    <div class="tab ${tab==='calendar'?'active':''}" onclick="STATE.eventsTab='calendar'; afterShellRender();">Events &amp; Calendar</div>
+    ${STATE.mode==='pc' ? ('<div class="tab '+(tab==='biometric'?'active':'')+'" onclick="STATE.eventsTab=\'biometric\'; afterShellRender();">Biometric Roll Call</div>') : ''}
+  </div>
+  ${(tab==='biometric' && STATE.mode==='pc') ? renderBiometricTab() : renderCalendarTab()}`;
+};
+function renderCalendarTab(){
+  const isKiosk = STATE.mode!=='pc';
+  return `
+  ${!isKiosk ? `<div class="card mb-3">
+    <div class="h3 mb-2">Add Event</div>
+    <div class="grid grid-4">
+      <div class="field" style="margin-bottom:0;"><label>Title</label><input class="input" id="evTitle"/></div>
+      <div class="field" style="margin-bottom:0;"><label>Date</label><input class="input" id="evDate" type="date"/></div>
+      <div class="field" style="margin-bottom:0;"><label>Type</label><select class="select" id="evType"><option>Camp</option><option>Parade</option><option>Drill</option><option>Social Service</option><option>Exam</option></select></div>
+      <div class="field" style="margin-bottom:0;"><label>Location</label><input class="input" id="evLoc"/></div>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="addEvent()">Add Event</button>
+  </div>` : ''}
+  <div class="card">
+    <div class="h3 mb-2">${isKiosk?'Upcoming Events':'All Events'}</div>
+    ${STATE.events.length ? STATE.events.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(e){ return `
+      <div class="flex items-center justify-between" style="padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;">
+        <div><div style="font-weight:650;font-size:13.5px;">${escapeHtml(e.title)}</div><div class="mute2" style="font-size:11.5px;">${fmtDate(e.date)} - ${escapeHtml(e.location||'')}${e.geo?(' - Geo: '+e.geo):''}</div></div>
+        <div class="flex gap-1" style="flex-wrap:wrap;">
+          <span class="badge badge-blue">${escapeHtml(e.type||'Event')}</span>
+          ${!isKiosk?`<button class="btn btn-ghost btn-sm" onclick="exportIcs('${e.id}')">Add to Google Calendar</button><button class="icon-btn" style="width:30px;height:30px;" title="Tag location" onclick="tagEventLocation('${e.id}')">\ud83d\udccd</button><button class="icon-btn" style="width:30px;height:30px;" onclick="deleteEvent('${e.id}')">x</button>`:''}
+        </div>
+      </div>`; }).join('') : emptyState('No events scheduled')}
+  </div>`;
+}
+async function addEvent(){
+  const title = ($('#evTitle').value||'').trim(); const date = $('#evDate').value;
+  if(!title || !date){ toast('Enter a title and date','error'); return; }
+  STATE.events.push({id:uid(), title:title, date:date, type:$('#evType').value, location:($('#evLoc').value||'').trim(), geo:null});
+  await saveData('events', STATE.events, true); toast('Event added','success'); afterShellRender();
+}
+async function deleteEvent(id){ STATE.events = STATE.events.filter(function(e){ return e.id!==id; }); await saveData('events', STATE.events, true); afterShellRender(); }
+function tagEventLocation(id){
+  if(!navigator.geolocation){ toast('Geolocation not available in this browser','error'); return; }
+  toast('Requesting location...','info');
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    const e = STATE.events.find(function(x){ return x.id===id; }); if(!e) return;
+    e.geo = pos.coords.latitude.toFixed(4)+', '+pos.coords.longitude.toFixed(4);
+    await saveData('events', STATE.events, true);
+    toast('Location tagged','success'); afterShellRender();
+  }, function(){ toast('Location permission denied','error'); });
+}
+function exportIcs(id){
+  const e = STATE.events.find(function(x){ return x.id===id; }); if(!e) return;
+  const dt = e.date.replace(/-/g,'');
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Project Prometheus//NCC ANO System//EN','BEGIN:VEVENT','UID:'+e.id+'@prometheus-ncc','DTSTAMP:'+dt+'T090000Z','DTSTART;VALUE=DATE:'+dt,'SUMMARY:'+e.title,'LOCATION:'+(e.location||''),'DESCRIPTION:'+e.type+' - synced from Project Prometheus NCC ANO System','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'Prometheus-Event-'+e.title.replace(/\s+/g,'-')+'.ics'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Calendar file downloaded - import into Google Calendar','success');
+}
+function renderBiometricTab(){
+  const today = new Date().toISOString().slice(0,10);
+  const todaysLog = STATE.attendance.filter(function(a){ return a.date===today; });
+  return `<div class="card">
+    <div class="flex justify-between items-center mb-2"><div class="h3">Smart Biometric Roll Call - ${fmtDate(today)}</div><span class="mute2" style="font-size:11.5px;">${todaysLog.length}/${STATE.cadets.length} marked</span></div>
+    <p class="mute2 mb-2" style="font-size:11px;">Simulated biometric scan for demonstration - production deployment would connect to a fingerprint/RFID device SDK.</p>
+    <div class="grid grid-4">
+    ${STATE.cadets.map(function(c){
+      const marked = todaysLog.find(function(a){ return a.cadetId===c.id; });
+      return `<div class="card card-tight" style="text-align:center;" id="scanCard_${c.id}">
+        <div class="scan-ring ${marked?'done':''}" id="scanRing_${c.id}">${marked?'\u2713':'\ud83d\udd90\ufe0f'}</div>
+        <div style="font-weight:650;font-size:12.5px;margin-top:8px;">${escapeHtml(c.name)}</div>
+        <div class="mute2" style="font-size:10.5px;">${escapeHtml(c.regNo)}</div>
+        ${marked ? ('<span class="badge badge-emerald mt-1">Present '+(marked.time||'')+'</span>') : ('<button class="btn btn-ghost btn-sm mt-1" onclick="biometricScan(\''+c.id+'\')">Scan</button>')}
+      </div>`;
+    }).join('')}
+    </div>
+  </div>`;
+}
+function biometricScan(cadetId){
+  const ring = $('#scanRing_'+cadetId); if(ring){ ring.classList.add('scanning'); ring.textContent = '\u25cc'; }
+  setTimeout(async function(){
+    const c = STATE.cadets.find(function(x){ return x.id===cadetId; }); if(!c) return;
+    const today = new Date().toISOString().slice(0,10);
+    STATE.attendance.push({id:uid(), cadetId:cadetId, cadetName:c.name, date:today, method:'Biometric (simulated)', status:'present', time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
+    await saveData('attendance', STATE.attendance, true);
+    toast(c.name+' marked present','success');
+    afterShellRender();
+  }, 1400);
+}
+
+/* ======================= SEED / DEMO DATA (first run only) ======================= */
+const SEED_CADETS = [
+  {id:uid(), name:'Cdt Aarav Sharma', regNo:'KAR/SD/24/0011', status:'active', attendance:92, joinDate:'2023-07-10', subjects:{HH:78,MR:65,FCBC:88,GA:70}},
+  {id:uid(), name:'Cdt Diya Patel', regNo:'KAR/SD/24/0012', status:'active', attendance:88, joinDate:'2023-07-10', subjects:{HH:82,MR:74,FCBC:69,GA:80}},
+  {id:uid(), name:'Cdt Kabir Singh', regNo:'KAR/SW/23/0004', status:'camp', attendance:96, joinDate:'2022-06-01', subjects:{HH:90,MR:85,FCBC:92,GA:88}},
+  {id:uid(), name:'Cdt Meera Iyer', regNo:'KAR/SD/26/0031', status:'new', attendance:100, joinDate:'2026-08-01', subjects:{HH:40,MR:35,FCBC:38,GA:42}},
+  {id:uid(), name:'Cdt Rohan Gowda', regNo:'KAR/SD/24/0015', status:'active', attendance:79, joinDate:'2023-07-10', subjects:{HH:60,MR:71,FCBC:66,GA:58}},
+  {id:uid(), name:'Cdt Ananya Reddy', regNo:'KAR/SW/23/0007', status:'active', attendance:94, joinDate:'2022-06-01', subjects:{HH:88,MR:91,FCBC:80,GA:85}},
+  {id:uid(), name:'Cdt Vihaan Nair', regNo:'KAR/SD/23/0019', status:'dropout', attendance:41, joinDate:'2023-07-10', subjects:{HH:55,MR:48,FCBC:50,GA:44}},
+  {id:uid(), name:'Cdt Ishita Verma', regNo:'KAR/SD/24/0022', status:'active', attendance:85, joinDate:'2023-07-10', subjects:{HH:72,MR:68,FCBC:75,GA:69}},
+  {id:uid(), name:'Cdt Arjun Menon', regNo:'KAR/SW/23/0009', status:'camp', attendance:90, joinDate:'2022-06-01', subjects:{HH:80,MR:77,FCBC:84,GA:76}},
+  {id:uid(), name:'Cdt Sanya Joshi', regNo:'KAR/SD/26/0032', status:'new', attendance:100, joinDate:'2026-08-05', subjects:{HH:36,MR:30,FCBC:33,GA:40}}
+];
+const SEED_FINANCE = {
+  budget: 150000,
+  expenditures: [
+    {id:uid(), date:'2026-06-12', category:'Uniform', description:'Uniform procurement - new joinees', amount:18500},
+    {id:uid(), date:'2026-06-28', category:'Camp', description:'Annual Training Camp transport', amount:42000},
+    {id:uid(), date:'2026-07-15', category:'First Aid', description:'First aid kit restocking', amount:6200},
+    {id:uid(), date:'2026-07-30', category:'Stationery', description:'Training material printing', amount:4100}
+  ]
+};
+const SEED_EVENTS = [
+  {id:uid(), title:'Annual Training Camp (ATC)', date:'2026-09-14', type:'Camp', location:'Belagavi Camp Ground', geo:null},
+  {id:uid(), title:'Republic Day Camp Selection Drill', date:'2026-09-02', type:'Drill', location:'Unit HQ Parade Ground', geo:null},
+  {id:uid(), title:'Map Reading Field Exercise', date:'2026-08-22', type:'Drill', location:'Nandi Hills Training Area', geo:null},
+  {id:uid(), title:'Blood Donation Camp', date:'2026-08-30', type:'Social Service', location:'District Hospital', geo:null},
+  {id:uid(), title:'Investiture Ceremony', date:'2026-09-20', type:'Parade', location:'Unit HQ', geo:null}
+];
+const SEED_ACHIEVEMENTS = [
+  {id:uid(), who:'Cdt Kabir Singh', title:'Best Cadet - Annual Camp', date:'2026-03-18'},
+  {id:uid(), who:'Cdt Ananya Reddy', title:'Selected for Republic Day Camp', date:'2026-01-10'},
+  {id:uid(), who:'Unit', title:'Best Turnout Award - Independence Day Parade', date:'2026-08-15'}
+];
+
+/* ======================= LANGUAGE, OFFLINE, VOICE (global controls) ======================= */
+async function setLanguage(lang){
+  STATE.language = lang;
+  render();
+  if(lang!=='en' && STATE.session && STATE.session.phase===1 && (STATE.session.phase1Tab||'notes')==='notes'){
+    translateCurrentNotes(lang);
+  }
+}
+async function translateCurrentNotes(lang){
+  const sess = STATE.session; if(!sess) return;
+  if(!sess.translatedNotes) sess.translatedNotes = {};
+  if(sess.translatedNotes[lang]){ sess.notes = sess.translatedNotes[lang]; sess.notesSource='translated'; buildSentences(); afterShellRender(); return; }
+  const source = CONTENT[sess.subject].notes;
+  toast('Translating to '+LANGS[lang]+'...', 'info');
+  const translated = [];
+  for(let i=0; i<source.length; i++){
+    const body = await aiTranslate(source[i].body, lang);
+    const heading = await aiTranslate(source[i].heading, lang);
+    translated.push({heading: heading || source[i].heading, body: body || source[i].body});
+  }
+  sess.translatedNotes[lang] = translated;
+  if(STATE.language===lang && STATE.session===sess){
+    sess.notes = translated; sess.notesSource = 'translated'; buildSentences(); afterShellRender();
+    toast('Notes translated to '+LANGS[lang], 'success');
+  }
+}
+function toggleOffline(){
+  STATE.offline = !STATE.offline;
+  toast(STATE.offline ? 'Offline mode enabled - using cached content only' : 'Offline mode disabled - live AI features active', STATE.offline?'info':'success');
+  render();
+}
+window.addEventListener('offline', function(){ STATE.offline = true; if(STATE.screen!=='login') render(); });
+
+let RECOGNIZER = null;
+function toggleVoice(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast('Voice control is not supported in this browser - try Chrome','error'); return; }
+  if(STATE.voiceOn){ if(RECOGNIZER){ try{ RECOGNIZER.stop(); }catch(e){} } STATE.voiceOn=false; render(); return; }
+  RECOGNIZER = new SR();
+  RECOGNIZER.lang = ({en:'en-IN',hi:'hi-IN',kn:'kn-IN',ta:'ta-IN',te:'te-IN'})[STATE.language] || 'en-IN';
+  RECOGNIZER.continuous = false;
+  RECOGNIZER.interimResults = false;
+  RECOGNIZER.onresult = function(e){
+    const transcript = e.results[0][0].transcript;
+    toast('Heard: ' + transcript, 'info');
+    handleVoiceCommand(transcript.toLowerCase());
+  };
+  RECOGNIZER.onerror = function(){ STATE.voiceOn=false; render(); };
+  RECOGNIZER.onend = function(){ STATE.voiceOn=false; render(); };
+  try{ RECOGNIZER.start(); STATE.voiceOn = true; render(); }
+  catch(e){ toast('Could not start voice recognition','error'); }
+}
+function handleVoiceCommand(t){
+  if(t.indexOf('dashboard')>-1 || t.indexOf('home')>-1){ goto(STATE.mode==='pc'?'pc-dashboard':'kiosk-dashboard'); return; }
+  if(t.indexOf('health')>-1 || t.indexOf('hygiene')>-1){ goto('subject-home',{currentSubject:'HH'}); return; }
+  if(t.indexOf('map')>-1){ goto('subject-home',{currentSubject:'MR'}); return; }
+  if(t.indexOf('field craft')>-1 || t.indexOf('battle craft')>-1){ goto('subject-home',{currentSubject:'FCBC'}); return; }
+  if(t.indexOf('awareness')>-1){ goto('subject-home',{currentSubject:'GA'}); return; }
+  if(t.indexOf('roster')>-1){ if(STATE.mode==='pc'){ goto('pc-roster'); } return; }
+  if(t.indexOf('vault')>-1 || t.indexOf('pdf')>-1){ goto('pdf-vault'); return; }
+  if(t.indexOf('event')>-1 || t.indexOf('calendar')>-1){ goto('pc-events'); return; }
+  if(t.indexOf('start') > -1 && STATE.currentSubject){ startSession(STATE.currentSubject); return; }
+  if(t.indexOf('next') > -1 && STATE.session){ if(STATE.session.phase<4) sessionGoPhase(STATE.session.phase+1); return; }
+  if((t.indexOf('read')>-1 || t.indexOf('play')>-1) && STATE.session && STATE.session.phase===1){ audioPlay(); return; }
+  if((t.indexOf('pause')>-1 || t.indexOf('stop')>-1) && STATE.session){ audioPause(); return; }
+  if(STATE.session && STATE.session.phase===4){
+    const input = $('#chatInput'); if(input){ input.value = t; sendDoubt(); return; }
+  }
+  toast('Command not recognized - try "open dashboard" or "start map reading"', 'error');
+}
+
+/* ======================= BOOTSTRAP ======================= */
+async function init(){
+  try{
+    STATE.cadets = await loadData('cadets', null, true);
+    if(!STATE.cadets){ STATE.cadets = SEED_CADETS; await saveData('cadets', STATE.cadets, true); }
+    STATE.finance = await loadData('finance', null, true);
+    if(!STATE.finance){ STATE.finance = SEED_FINANCE; await saveData('finance', STATE.finance, true); }
+    STATE.events = await loadData('events', null, true);
+    if(!STATE.events){ STATE.events = SEED_EVENTS; await saveData('events', STATE.events, true); }
+    STATE.achievements = await loadData('achievements', null, true);
+    if(!STATE.achievements){ STATE.achievements = SEED_ACHIEVEMENTS; await saveData('achievements', STATE.achievements, true); }
+    STATE.attendance = await loadData('attendance', [], true);
+    STATE.documents = await loadData('documents', [], true);
+    STATE.pdfVault = await loadData('pdfVault', [], true);
+    STATE.moduleProgress = await loadData('moduleProgress', {}, true);
+  }catch(e){
+    console.warn('Seed load failed, using in-memory defaults', e);
+    STATE.cadets = SEED_CADETS; STATE.finance = SEED_FINANCE; STATE.events = SEED_EVENTS;
+    STATE.achievements = SEED_ACHIEVEMENTS; STATE.attendance = []; STATE.documents = []; STATE.pdfVault = []; STATE.moduleProgress = {};
+  }
+  finishSplash();
+}
+function finishSplash(){
+  setTimeout(function(){
+    const splash = $('#splash');
+    if(splash){
+      splash.classList.add('fade-out');
+      setTimeout(function(){ splash.style.display = 'none'; }, 520);
+    }
+    render();
+  }, 2400);
+}
+init();
+</script>
+</body>
+</html>
